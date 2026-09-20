@@ -10,6 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Courrier Sami">
+  <link rel="apple-touch-icon" href="https://www.chirurgiemarseille.com/templates/captain/img/interface/logo.png">
   
   <style>
     :root {
@@ -36,7 +37,7 @@
       padding: 8px 12px;
       max-width: 900px;
       margin: 0 auto;
-      font-size: 0.88rem; /* Police plus petite pour tout voir d'un coup */
+      font-size: 0.88rem; /* Police ajustée pour tout voir d'un coup */
     }
 
     header {
@@ -48,13 +49,24 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .site-logo {
+      height: 36px;
+      width: auto;
+      object-fit: contain;
+    }
+
     h1 {
       font-size: 1rem;
       font-weight: 700;
       color: var(--primary);
       display: flex;
       align-items: center;
-      gap: 6px;
     }
 
     .btn-settings {
@@ -290,10 +302,10 @@
 <body>
 
   <header>
-    <h1>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-      générateur de courrier par Sami
-    </h1>
+    <div class="header-left">
+      <img src="https://www.chirurgiemarseille.com/templates/captain/img/interface/logo.png" alt="Logo Chirurgie Marseille" class="site-logo" />
+      <h1>générateur de courrier par Sami</h1>
+    </div>
     <button class="btn-settings" id="openConfig" title="Paramètres Clé API">⚙️</button>
   </header>
 
@@ -626,7 +638,7 @@
       generateLetterBtn.textContent = "⏳ Rédaction...";
       letterText.value = "Rédaction en cours par l'IA...";
 
-      const promptUser = `Je suis un chirurgien digestif. Rémerge un courrier médical de consultation.
+      const promptUser = `Je suis un chirurgien digestif. Rédige un courrier médical de consultation.
 
 CONSIGNE STRICTE :
 NE RAJOUTE AUCUNE PHRASE D'INTRODUCTION, AUCUN TITRE, AUCUNE LIGNE D'OBJET NI EN-TÊTE.
