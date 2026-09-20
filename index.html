@@ -388,7 +388,7 @@
       <label for="modelSelect">Modèle Gemini utilisé :</label>
       <select id="modelSelect">
         <option value="gemini-1.5-flash">gemini-1.5-flash (Rapide)</option>
-        <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+        <option value="gemini-3.5-flash">gemini-3.5-flash</option>
         <option value="gemini-2.5-flash">gemini-2.5-flash</option>
         <option value="gemini-1.5-pro">gemini-1.5-pro</option>
         <option value="custom">Saisir manuellement...</option>
@@ -658,7 +658,7 @@ INFORMATIONS DU PATIENT :
 - Conduite À Tenir (CAT) : "${cat}"`;
 
       let primaryModel = localStorage.getItem('gemini_model') || 'gemini-1.5-flash';
-      const fallbackModels = [...new Set([primaryModel, 'gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'])];
+      const fallbackModels = [...new Set([primaryModel, 'gemini-1.5-flash', 'gemini-3.5-flash', 'gemini-1.5-pro'])];
 
       let success = false;
       let lastErrorMsg = '';
