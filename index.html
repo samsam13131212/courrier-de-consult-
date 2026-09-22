@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>générateur de courrier par Sami</title>
+  <title>Générateur de courrier par Sami</title>
   
   <!-- Configuration PWA Mobile -->
   <meta name="theme-color" content="#2563eb">
@@ -18,6 +18,7 @@
       --primary-hover: #1d4ed8;
       --danger: #dc2626;
       --success: #059669;
+      --warning: #d97706;
       --bg: #f1f5f9;
       --card-bg: #ffffff;
       --text: #0f172a;
@@ -35,9 +36,9 @@
       background-color: var(--bg);
       color: var(--text);
       padding: 8px 12px;
-      max-width: 900px;
+      max-width: 1280px;
       margin: 0 auto;
-      font-size: 0.88rem; /* Police ajustée pour tout voir d'un coup */
+      font-size: 0.88rem;
     }
 
     header {
@@ -77,16 +78,27 @@
       padding: 2px 6px;
     }
 
-    /* Layout Compact en 2 colonnes sur écran large */
     .app-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1.1fr 0.9fr;
       gap: 10px;
+    }
+
+    @media (max-width: 1024px) {
+      .app-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .col-checklist {
+        grid-column: span 2;
+      }
     }
 
     @media (max-width: 700px) {
       .app-grid {
         grid-template-columns: 1fr;
+      }
+      .col-checklist {
+        grid-column: span 1;
       }
     }
 
@@ -109,7 +121,6 @@
       color: #334155;
     }
 
-    /* Ligne d'état / Patient */
     .patient-bar {
       display: flex;
       align-items: center;
@@ -137,7 +148,6 @@
       width: 60px;
     }
 
-    /* Boutons Compacts */
     .btn {
       width: 100%;
       padding: 8px 12px;
@@ -209,20 +219,26 @@
       height: 55px;
     }
 
-    .ta-medium {
-      height: 80px;
+    .ta-notes {
+      height: 90px;
     }
 
     #letterText {
       overflow-y: hidden;
       resize: none;
-      min-height: 140px;
+      min-height: 220px;
       background-color: #fff;
     }
 
     textarea:focus {
       outline: 2px solid var(--primary);
       background-color: #fff;
+    }
+
+    .audio-preview {
+      width: 100%;
+      height: 32px;
+      margin-top: 6px;
     }
 
     .status-badge {
@@ -240,7 +256,40 @@
       font-weight: 600;
     }
 
-    /* Modal */
+    .checklist-container {
+      font-size: 0.82rem;
+      line-height: 1.4;
+      color: #1e293b;
+    }
+
+    .checklist-placeholder {
+      color: #94a3b8;
+      font-style: italic;
+      font-size: 0.8rem;
+    }
+
+    .checklist-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .checklist-item {
+      background: #fffbe3;
+      border-left: 3px solid var(--warning);
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      border-radius: 0 6px 6px 0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .checklist-item strong {
+      display: block;
+      color: #b45309;
+      margin-bottom: 2px;
+      font-size: 0.82rem;
+    }
+
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -278,7 +327,6 @@
       font-size: 0.85rem;
     }
 
-    /* Notification Toast */
     .toast {
       position: fixed;
       bottom: 16px;
@@ -297,6 +345,14 @@
 
     .toast.show { transform: translateX(-50%) translateY(0); }
     .error-msg { color: var(--danger); font-size: 0.78rem; margin-top: 4px; display: none; }
+    
+    .timer-display {
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: var(--danger);
+      display: none;
+      margin-left: 6px;
+    }
   </style>
 </head>
 <body>
@@ -309,7 +365,6 @@
     <button class="btn-settings" id="openConfig" title="Paramètres Clé API">⚙️</button>
   </header>
 
-  <!-- Barre Patient : Sexe & Âge -->
   <div class="patient-bar">
     <label for="patientSex">Sexe :</label>
     <select id="patientSex">
@@ -320,38 +375,30 @@
     <label for="patientAge">Âge :</label>
     <input type="number" id="patientAge" min="0" max="120" placeholder="ans" />
 
+    <span id="timer" class="timer-display">00:00</span>
     <span id="statusBadge" class="status-badge">Prêt</span>
   </div>
 
   <div class="app-grid">
-    <!-- COLONNE GAUCHE : Saisie & Enregistrement -->
     <div class="col-left">
-      <!-- Dictée vocale -->
       <div class="card">
-        <div class="card-title">
-          1. Enregistrement / Dictée
-        </div>
+        <div class="card-title">1. Enregistrement Audio</div>
         <button id="recordBtn" class="btn btn-record">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
           <span id="recordBtnText">Démarrer l'enregistrement</span>
         </button>
         <div id="micError" class="error-msg"></div>
-
-        <textarea id="transcriptionText" class="ta-medium" style="margin-top: 8px;" placeholder="Transcription brute de la dictée..."></textarea>
+        <audio id="audioPreview" class="audio-preview" controls style="display: none;"></audio>
       </div>
 
-      <!-- Notes -->
       <div class="card">
         <div class="card-title">2. Notes</div>
-        <textarea id="notesText" class="ta-small" placeholder="Informations complémentaires, antécédents, motif..."></textarea>
+        <textarea id="notesText" class="ta-notes" placeholder="Informations complémentaires, antécédents, traitements, examen clinique..."></textarea>
       </div>
 
-      <!-- CAT (Conduite À Tenir) -->
       <div class="card">
         <div class="card-title">3. CAT (Conduite À Tenir)</div>
         <textarea id="catText" class="ta-small" placeholder="Indications, bilan à prévoir, chirurgie, ttt..."></textarea>
-
-        <!-- Bouton Résumé Fiche Cabinet -->
         <button id="copyCabinetSummaryBtn" class="btn btn-summary">
           📋 Résumé fiche cab (Copier Notes + CAT)
         </button>
@@ -362,40 +409,60 @@
       </button>
     </div>
 
-    <!-- COLONNE DROITE : Courrier Généré -->
-    <div class="col-right">
+    <div class="col-center">
       <div class="card" style="height: 100%; display: flex; flex-direction: column;">
-        <div class="card-title">
-          Courrier de consultation
-        </div>
+        <div class="card-title">Courrier de consultation</div>
         <textarea id="letterText" placeholder="Le courrier structuré s'affichera ici..." readonly style="flex-grow: 1;"></textarea>
-        
         <button id="copyLetterBtn" class="btn btn-secondary">
           📋 Copier le courrier
         </button>
       </div>
     </div>
+
+    <div class="col-checklist">
+      <div class="card" style="height: 100%; background: #fffdf5; border-color: #fef08a;">
+        <div class="card-title" style="color: #92400e;">
+          💡 N'oublie pas
+        </div>
+        <div id="checklistContent" class="checklist-container">
+          <p class="checklist-placeholder">L'analyse clinique et les recommandations des sociétés savantes s'afficheront ici après la génération du courrier...</p>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Modal Paramètres Gemini -->
   <div id="configModal" class="modal-overlay">
     <div class="modal">
       <h3 style="font-size: 1rem; margin-bottom: 10px;">Configuration IA Gemini</h3>
       
-      <label for="apiKeyInput">Clé API Google Gemini :</label>
-      <input type="password" id="apiKeyInput" placeholder="Clé API AIzaSy..." />
+      <label for="connectionMode">Mode de connexion :</label>
+      <select id="connectionMode">
+        <option value="proxy">Proxy sécurisé (recommandé — clé jamais exposée)</option>
+        <option value="direct">Clé API directe (stockée uniquement dans ce navigateur)</option>
+      </select>
+
+      <div id="proxyModeContainer">
+        <label for="proxyUrlInput">URL du proxy (Cloudflare Worker) :</label>
+        <input type="text" id="proxyUrlInput" placeholder="https://gemini-proxy.votre-compte.workers.dev" />
+      </div>
+
+      <div id="directModeContainer" style="display: none;">
+        <label for="apiKeyInput">Clé API Google Gemini :</label>
+        <input type="password" id="apiKeyInput" placeholder="Clé API AIzaSy..." />
+        <p style="font-size: 0.72rem; color: var(--danger); margin-top: 4px;">
+          ⚠️ Stockée en clair dans ce navigateur uniquement. Ne partagez jamais ce fichier HTML une fois une clé enregistrée dedans.
+        </p>
+      </div>
 
       <label for="modelSelect">Modèle Gemini utilisé :</label>
       <select id="modelSelect">
-        <option value="gemini-1.5-flash">gemini-1.5-flash (Rapide)</option>
-        <option value="gemini-3.5-flash">gemini-3.5-flash</option>
-        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-        <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+        <option value="gemini-3.6-flash">gemini-3.6-flash (Recommandé)</option>
+        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Rapide)</option>
         <option value="custom">Saisir manuellement...</option>
       </select>
 
       <div id="customModelContainer" style="display: none; margin-top: 6px;">
-        <input type="text" id="customModelInput" placeholder="Ex: gemini-2.5-flash" />
+        <input type="text" id="customModelInput" placeholder="Ex: gemini-3.6-flash" />
       </div>
 
       <div style="display: flex; gap: 8px; margin-top: 16px;">
@@ -405,23 +472,46 @@
     </div>
   </div>
 
-  <!-- Notification Toast -->
   <div id="toast" class="toast">Copié dans le presse-papier !</div>
 
   <script>
-    // --- 1. Variables & DOM Elements ---
-    let recognition = null;
+    // Aucune clé API par défaut n'est plus embarquée dans ce fichier :
+    // chaque utilisateur configure son propre proxy (recommandé) ou sa propre clé.
+    const DEFAULT_PROXY_URL = "https://wandering-cake-8385gemini-proxy-sami.sami-hamed86.workers.dev";
+
+    // Modèles retirés par Google, ou alias imprévisibles (pro-latest peut pointer vers
+    // un modèle sans quota gratuit) : si l'utilisateur avait ça d'enregistré (ancienne
+    // config), on l'ignore pour éviter les erreurs "is not found" / "quota exceeded".
+    const OBSOLETE_MODELS = [
+      'gemini-1.5-pro-latest', 'gemini-1.5-pro', 'gemini-1.5-flash-latest',
+      'gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.0-pro',
+      'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.0-flash-exp',
+      'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite',
+      'gemini-pro-latest', 'gemini-flash-latest'
+    ];
+    const savedModelAtLoad = (localStorage.getItem('gemini_model') || '').replace(/^models\//, '').trim();
+    if (savedModelAtLoad && OBSOLETE_MODELS.includes(savedModelAtLoad)) {
+      localStorage.removeItem('gemini_model');
+    }
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlob = null;
     let isRecording = false;
+    let timerInterval = null;
+    let secondsElapsed = 0;
 
     const recordBtn = document.getElementById('recordBtn');
     const recordBtnText = document.getElementById('recordBtnText');
     const statusBadge = document.getElementById('statusBadge');
+    const timerDisplay = document.getElementById('timer');
+    const audioPreview = document.getElementById('audioPreview');
     const patientSex = document.getElementById('patientSex');
     const patientAge = document.getElementById('patientAge');
-    const transcriptionText = document.getElementById('transcriptionText');
     const notesText = document.getElementById('notesText');
     const catText = document.getElementById('catText');
     const letterText = document.getElementById('letterText');
+    const checklistContent = document.getElementById('checklistContent');
     
     const copyLetterBtn = document.getElementById('copyLetterBtn');
     const copyCabinetSummaryBtn = document.getElementById('copyCabinetSummaryBtn');
@@ -433,89 +523,89 @@
     const closeConfig = document.getElementById('closeConfig');
     const saveApiKey = document.getElementById('saveApiKey');
     const apiKeyInput = document.getElementById('apiKeyInput');
+    const connectionMode = document.getElementById('connectionMode');
+    const proxyModeContainer = document.getElementById('proxyModeContainer');
+    const directModeContainer = document.getElementById('directModeContainer');
+    const proxyUrlInput = document.getElementById('proxyUrlInput');
     const modelSelect = document.getElementById('modelSelect');
     const customModelContainer = document.getElementById('customModelContainer');
     const customModelInput = document.getElementById('customModelInput');
     const toast = document.getElementById('toast');
 
-    // Redimensionnement automatique pour le courrier
     function autoResizeLetterTextarea() {
       letterText.style.height = 'auto';
-      letterText.style.height = Math.max(160, letterText.scrollHeight + 4) + 'px';
+      letterText.style.height = Math.max(220, letterText.scrollHeight + 4) + 'px';
     }
     letterText.addEventListener('input', autoResizeLetterTextarea);
 
-    // --- 2. Reconnaissance Vocale (Web Speech API) ---
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      showError("Reconnaissance vocale non supportée sur ce navigateur.");
-      recordBtn.disabled = true;
-      recordBtn.style.opacity = '0.5';
-    } else {
-      recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'fr-FR';
-
-      recognition.onresult = (event) => {
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + ' ';
-          }
-        }
-        if (finalTranscript) {
-          transcriptionText.value += finalTranscript;
-          transcriptionText.scrollTop = transcriptionText.scrollHeight;
-        }
-      };
-
-      recognition.onerror = (event) => {
-        if (event.error === 'not-allowed') {
-          showError("Accès micro refusé.");
-        } else if (event.error !== 'no-speech') {
-          showError("Erreur micro : " + event.error);
-        }
+    recordBtn.addEventListener('click', async () => {
+      if (!isRecording) {
+        await startRecording();
+      } else {
         stopRecording();
-      };
-
-      recognition.onend = () => {
-        if (isRecording) {
-          try { recognition.start(); } catch(e) {}
-        }
-      };
-    }
-
-    recordBtn.addEventListener('click', () => {
-      if (!isRecording) startRecording();
-      else stopRecording();
+      }
     });
 
-    function startRecording() {
-      if (!recognition) return;
+    async function startRecording() {
       micError.style.display = 'none';
-      isRecording = true;
+      audioChunks = [];
+      audioBlob = null;
+
       try {
-        recognition.start();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        let options = {};
+        if (MediaRecorder.isTypeSupported('audio/webm')) options = { mimeType: 'audio/webm' };
+        else if (MediaRecorder.isTypeSupported('audio/mp4')) options = { mimeType: 'audio/mp4' };
+        else if (MediaRecorder.isTypeSupported('audio/ogg')) options = { mimeType: 'audio/ogg' };
+
+        mediaRecorder = new MediaRecorder(stream, options);
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const mimeType = mediaRecorder.mimeType || 'audio/webm';
+          audioBlob = new Blob(audioChunks, { type: mimeType });
+          audioPreview.src = URL.createObjectURL(audioBlob);
+          audioPreview.style.display = 'block';
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start(1000);
+        isRecording = true;
+
         recordBtn.classList.add('recording');
         recordBtnText.textContent = "Arrêter l'enregistrement";
         statusBadge.textContent = "🎙️ Enregistrement...";
         statusBadge.classList.add('active');
-      } catch (e) {
-        showError("Erreur micro : " + e.message);
-        isRecording = false;
+
+        secondsElapsed = 0;
+        timerDisplay.style.display = 'inline';
+        timerDisplay.textContent = '00:00';
+        timerInterval = setInterval(() => {
+          secondsElapsed++;
+          const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+          const secs = String(secondsElapsed % 60).padStart(2, '0');
+          timerDisplay.textContent = `${mins}:${secs}`;
+        }, 1000);
+
+      } catch (err) {
+        showError("Impossible d'accéder au microphone : " + err.message);
       }
     }
 
     function stopRecording() {
-      isRecording = false;
-      if (recognition) {
-        try { recognition.stop(); } catch(e) {}
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
       }
+      isRecording = false;
+      clearInterval(timerInterval);
+      
       recordBtn.classList.remove('recording');
-      recordBtnText.textContent = "Démarrer l'enregistrement";
-      statusBadge.textContent = "Prêt";
+      recordBtnText.textContent = "Nouvel enregistrement audio";
+      statusBadge.textContent = "Audio prêt";
       statusBadge.classList.remove('active');
     }
 
@@ -524,7 +614,15 @@
       micError.style.display = 'block';
     }
 
-    // --- 3. Copie dans le Presse-Papier ---
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
     function copyToClipboard(text, successMsg) {
       if (!text.trim()) {
         showToast("Rien à copier !");
@@ -551,11 +649,9 @@
 
     copyLetterBtn.addEventListener('click', () => copyToClipboard(letterText.value, "Courrier copié !"));
 
-    // BOUTON "Résumé fiche cab" : Combine Notes + CAT
     copyCabinetSummaryBtn.addEventListener('click', () => {
       const notes = notesText.value.trim();
       const cat = catText.value.trim();
-      
       let summary = "";
       if (notes) summary += "NOTES :\n" + notes + "\n\n";
       if (cat) summary += "CAT :\n" + cat;
@@ -564,19 +660,29 @@
         showToast("Remplissez d'abord Notes ou CAT.");
         return;
       }
-
       copyToClipboard(summary, "Résumé cab copié !");
     });
 
-    // --- 4. Configuration Clé API ---
     modelSelect.addEventListener('change', () => {
       customModelContainer.style.display = (modelSelect.value === 'custom') ? 'block' : 'none';
     });
 
+    connectionMode.addEventListener('change', () => {
+      const isProxy = connectionMode.value === 'proxy';
+      proxyModeContainer.style.display = isProxy ? 'block' : 'none';
+      directModeContainer.style.display = isProxy ? 'none' : 'block';
+    });
+
     openConfig.addEventListener('click', () => {
+      const savedProxyUrl = localStorage.getItem('gemini_proxy_url') || DEFAULT_PROXY_URL;
+      const savedMode = localStorage.getItem('gemini_connection_mode') || (savedProxyUrl ? 'proxy' : 'proxy');
+      connectionMode.value = savedMode;
+      proxyModeContainer.style.display = (savedMode === 'proxy') ? 'block' : 'none';
+      directModeContainer.style.display = (savedMode === 'proxy') ? 'none' : 'block';
+      proxyUrlInput.value = savedProxyUrl;
       apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
-      const savedModel = localStorage.getItem('gemini_model') || 'gemini-1.5-flash';
-      
+
+      const savedModel = localStorage.getItem('gemini_model') || 'gemini-3.6-flash';
       if (Array.from(modelSelect.options).some(opt => opt.value === savedModel)) {
         modelSelect.value = savedModel;
         customModelContainer.style.display = 'none';
@@ -591,61 +697,108 @@
     closeConfig.addEventListener('click', () => configModal.classList.remove('active'));
 
     saveApiKey.addEventListener('click', () => {
-      const key = apiKeyInput.value.trim();
+      const mode = connectionMode.value;
       let selectedModel = modelSelect.value === 'custom' ? customModelInput.value.trim() : modelSelect.value;
+      selectedModel = selectedModel.replace(/^models\//, '');
 
-      if (key) {
-        localStorage.setItem('gemini_api_key', key);
-        localStorage.setItem('gemini_model', selectedModel || 'gemini-1.5-flash');
-        showToast("Configuration enregistrée !");
-        configModal.classList.remove('active');
+      if (mode === 'proxy') {
+        const proxyUrl = proxyUrlInput.value.trim().replace(/\/$/, '');
+        if (!proxyUrl) {
+          showToast("Renseignez l'URL du proxy, ou passez en mode clé directe.");
+          return;
+        }
+        localStorage.setItem('gemini_proxy_url', proxyUrl);
       } else {
-        localStorage.removeItem('gemini_api_key');
-        showToast("Clé supprimée.");
+        const key = apiKeyInput.value.trim();
+        if (!key) {
+          showToast("Renseignez votre clé API Gemini.");
+          return;
+        }
+        localStorage.setItem('gemini_api_key', key);
       }
+
+      localStorage.setItem('gemini_connection_mode', mode);
+      localStorage.setItem('gemini_model', selectedModel || 'gemini-3.6-flash');
+      showToast("Configuration enregistrée !");
+      configModal.classList.remove('active');
     });
 
-    // --- 5. Appel Gemini & Génération ---
-    async function callGeminiApi(apiKey, modelName, promptPayload) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    async function callGeminiApiMultimodal(rawModelName, parts) {
+      const cleanModelName = rawModelName.replace(/^models\//, '').trim();
+      const mode = localStorage.getItem('gemini_connection_mode') || 'proxy';
+
+      if (mode === 'proxy') {
+        const proxyUrl = localStorage.getItem('gemini_proxy_url') || DEFAULT_PROXY_URL;
+        if (!proxyUrl) throw new Error("Aucun proxy configuré. Ouvrez les Paramètres ⚙️.");
+        return await fetch(proxyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: cleanModelName, parts })
+        });
+      }
+
+      const apiKey = localStorage.getItem('gemini_api_key');
+      if (!apiKey) throw new Error("Aucune clé API configurée. Ouvrez les Paramètres ⚙️.");
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModelName}:generateContent?key=${apiKey}`;
       return await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: promptPayload }] }] })
+        body: JSON.stringify({ contents: [{ parts: parts }] })
       });
     }
 
+    function formatChecklistHTML(rawText) {
+      const items = rawText.split(/\n(?=\d+[\.\)]|\-|\*)/).filter(item => item.trim().length > 0);
+      if (items.length === 0) return `<p class="checklist-placeholder">${rawText}</p>`;
+
+      let html = '<ul class="checklist-list">';
+      items.forEach(item => {
+        const clean = item.replace(/^[\d\.\-\*\)\s]+/, '').trim();
+        const parts = clean.split(':');
+        if (parts.length > 1) {
+          html += `<li class="checklist-item"><strong>${parts[0].trim()}</strong>${parts.slice(1).join(':').trim()}</li>`;
+        } else {
+          html += `<li class="checklist-item">${clean}</li>`;
+        }
+      });
+      html += '</ul>';
+      return html;
+    }
+
     generateLetterBtn.addEventListener('click', async () => {
-      const apiKey = localStorage.getItem('gemini_api_key');
-      if (!apiKey) {
-        alert("Veuillez configurer votre clé API Gemini (⚙️ en haut à droite).");
-        configModal.classList.add('active');
+      const hasProxy = !!(localStorage.getItem('gemini_proxy_url') || DEFAULT_PROXY_URL);
+      const hasKey = !!localStorage.getItem('gemini_api_key');
+      const mode = localStorage.getItem('gemini_connection_mode') || 'proxy';
+      if ((mode === 'proxy' && !hasProxy) || (mode === 'direct' && !hasKey)) {
+        alert("Veuillez d'abord configurer votre connexion Gemini (⚙️ Paramètres).");
         return;
       }
 
-      const dictation = transcriptionText.value.trim();
+      if (isRecording) stopRecording();
+
       const notes = notesText.value.trim();
       const cat = catText.value.trim();
       const sex = patientSex.value;
       const age = patientAge.value ? patientAge.value + " ans" : "";
 
-      if (!dictation && !notes && !cat) {
-        alert("Veuillez remplir au moins la dictée, les notes ou la CAT.");
+      if (!audioBlob && !notes && !cat) {
+        alert("Veuillez réaliser un enregistrement audio ou remplir les zones Notes / CAT.");
         return;
       }
 
       generateLetterBtn.disabled = true;
-      generateLetterBtn.textContent = "⏳ Rédaction...";
-      letterText.value = "Rédaction en cours par l'IA...";
+      generateLetterBtn.textContent = "⏳ Analyse audio, rédaction & recommandations...";
+      letterText.value = "Analyse de l'audio et rédaction du courrier par l'IA...";
+      checklistContent.innerHTML = "<p class='checklist-placeholder'>🔍 Analyse des risques et des recommandations des sociétés savantes en cours...</p>";
 
-      const promptUser = `Je suis un chirurgien digestif. Rédige un courrier médical de consultation.
+      const promptLetter = `Je suis un chirurgien digestif. Rédige un courrier médical de consultation à partir de l'audio enregistré et des notes fournies.
 
 CONSIGNE STRICTE :
 NE RAJOUTE AUCUNE PHRASE D'INTRODUCTION, AUCUN TITRE, AUCUNE LIGNE D'OBJET NI EN-TÊTE.
 LE COURRIER DOIT IMPÉRATIVEMENT COMMENCER DIRECTEMENT PAR LE PREMIER MOT : "Il s'agit d'un ${sex === 'Homme' ? 'homme' : 'une femme'}${age ? ' de ' + age : ''}...".
 
 STRUCTURE DU COURRIER :
-1. Corps du Texte : Synthétise les points clés (dictée + notes) dans un langage formel, droit au but (4-5 paragraphes, ou 6-7 si cas oncologique/complexe). Ne rajoute pas d'explication aux termes médicaux entre parenthèses.
+1. Corps du Texte : Synthétise la dictée contenue dans l'audio et les notes textuelles en un langage médical formel, droit au but (4-5 paragraphes, ou 6-7 si cas oncologique/complexe). Ne rajoute pas d'explication aux termes médicaux entre parenthèses.
 2. Conclusion/Appel à l'Action (basé sur la CAT) : Résumer en une phrase ce qui est attendu ("Il y a donc une indication opératoire pour..." ou la prise en charge retenue), la technique opératoire, la voie d'abord et le mode d'hospitalisation si opératoire. Préciser que les risques principaux ont été énoncés (les citer entre parenthèses).
 
 INFORMATIONS DU PATIENT :
@@ -653,47 +806,81 @@ INFORMATIONS DU PATIENT :
 - Âge : ${age || "Non précisé"}
 
 ÉLÉMENTS DE LA CONSULTATION :
-- Dictée brute : "${dictation}"
 - Notes complémentaires : "${notes}"
 - Conduite À Tenir (CAT) : "${cat}"`;
 
-      let primaryModel = localStorage.getItem('gemini_model') || 'gemini-1.5-flash';
-      const fallbackModels = [...new Set([primaryModel, 'gemini-1.5-flash', 'gemini-3.5-flash', 'gemini-1.5-pro'])];
+      const promptChecklist = `Tu es un assistant de chirurgie viscérale et digestive expert. 
+Analyse l'audio et les notes médicales ci-jointes pour ce patient (${sex}, ${age || "âge non précisé"}).
+En fonction de la pathologie évoquée, de la conduite à tenir (CAT: "${cat}") et des facteurs de risques détectés, propose 4 à 5 éléments COURTS et PERTINENTS à ne pas oublier ou à vérifier dans la prise en charge du patient selon les recommandations actuelles des sociétés savantes (HAS, ACHBT, SFCD, etc.).
 
-      let success = false;
-      let lastErrorMsg = '';
+Exemples d'éléments à chercher :
+- Bilan préopératoire manquant (scanner < 3 mois, consultation d'anesthésie, marqueurs, TDM thoracique si oncologie...)
+- Précautions / Comorbidités (anticoagulants, arrêt tabac, dénutrition, IMC, antécédents cardiovasculaires)
+- Checklist médico-légale (information éclairée spécifique, staff RCP si cancer, bilan de résection...)
 
-      for (const model of fallbackModels) {
-        try {
-          const response = await callGeminiApi(apiKey, model, promptUser);
-          const data = await response.json();
+FORMAT EXIGÉ (fournis uniquement la liste structurée ainsi) :
+1. Titre court du point : Explication très concise en 1 phrase.
+2. Titre court du point : Explication très concise en 1 phrase.
+3. Titre court du point : Explication très concise en 1 phrase.
+4. Titre court du point : Explication très concise en 1 phrase.
+5. Titre court du point : Explication très concise en 1 phrase.`;
 
-          if (data.error) {
-            lastErrorMsg = `[${model}] ${data.error.message}`;
-            continue;
-          }
-
-          let generatedContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (generatedContent) {
-            // Nettoyage de toute ligne d'en-tête éventuelle
-            const match = generatedContent.match(/Il s'agit[\s\S]*/i);
-            if (match) generatedContent = match[0];
-
-            letterText.value = generatedContent.trim();
-            letterText.removeAttribute('readonly');
-            autoResizeLetterTextarea();
-            showToast("Courrier généré !");
-            success = true;
-            break;
-          }
-        } catch (e) {
-          lastErrorMsg = e.message;
+      try {
+        let audioPart = null;
+        if (audioBlob) {
+          const base64Audio = await blobToBase64(audioBlob);
+          const mimeType = audioBlob.type.split(';')[0] || 'audio/webm';
+          audioPart = { inline_data: { mime_type: mimeType, data: base64Audio } };
         }
-      }
 
-      if (!success) {
-        alert("Erreur de génération :\n" + lastErrorMsg);
-        letterText.value = "Erreur : " + lastErrorMsg;
+        // Modèles de secours : uniquement ceux disponibles sur le tier gratuit (pas de "pro")
+        let primaryModel = (localStorage.getItem('gemini_model') || 'gemini-3.6-flash').replace(/^models\//, '').trim();
+        const fallbackModels = [...new Set([primaryModel, 'gemini-3.6-flash', 'gemini-3.5-flash-lite'])];
+
+        const letterParts = audioPart ? [audioPart, { text: promptLetter }] : [{ text: promptLetter }];
+        const checklistParts = audioPart ? [audioPart, { text: promptChecklist }] : [{ text: promptChecklist }];
+
+        const runApiCall = async (parts) => {
+          let lastErr = "";
+          for (const model of fallbackModels) {
+            try {
+              const response = await callGeminiApiMultimodal(model, parts);
+              const data = await response.json();
+              if (data.error) { lastErr = `[${model}] ${data.error.message}`; continue; }
+              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) return text;
+            } catch (e) { lastErr = e.message; }
+          }
+          throw new Error(lastErr || "Échec API");
+        };
+
+        const [letterResult, checklistResult] = await Promise.allSettled([
+          runApiCall(letterParts),
+          runApiCall(checklistParts)
+        ]);
+
+        if (letterResult.status === 'fulfilled') {
+          let genText = letterResult.value;
+          const match = genText.match(/Il s'agit[\s\S]*/i);
+          if (match) genText = match[0];
+
+          letterText.value = genText.trim();
+          letterText.removeAttribute('readonly');
+          autoResizeLetterTextarea();
+          showToast("Courrier généré !");
+        } else {
+          letterText.value = "Erreur lors de la génération du courrier : " + letterResult.reason.message;
+        }
+
+        if (checklistResult.status === 'fulfilled') {
+          checklistContent.innerHTML = formatChecklistHTML(checklistResult.value);
+        } else {
+          checklistContent.innerHTML = "<p class='checklist-placeholder' style='color:red;'>Erreur lors du calcul des recommandations.</p>";
+        }
+
+      } catch (err) {
+        alert("Erreur de traitement : " + err.message);
+        letterText.value = "Erreur de traitement.";
       }
 
       generateLetterBtn.disabled = false;
