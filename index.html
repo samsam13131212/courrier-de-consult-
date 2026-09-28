@@ -80,7 +80,7 @@
 
     .app-grid {
       display: grid;
-      grid-template-columns: 1fr 1.1fr 0.9fr;
+      grid-template-columns: 1fr 1.3fr;
       gap: 10px;
     }
 
@@ -88,17 +88,11 @@
       .app-grid {
         grid-template-columns: 1fr 1fr;
       }
-      .col-checklist {
-        grid-column: span 2;
-      }
     }
 
     @media (max-width: 700px) {
       .app-grid {
         grid-template-columns: 1fr;
-      }
-      .col-checklist {
-        grid-column: span 1;
       }
     }
 
@@ -256,40 +250,6 @@
       font-weight: 600;
     }
 
-    .checklist-container {
-      font-size: 0.82rem;
-      line-height: 1.4;
-      color: #1e293b;
-    }
-
-    .checklist-placeholder {
-      color: #94a3b8;
-      font-style: italic;
-      font-size: 0.8rem;
-    }
-
-    .checklist-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .checklist-item {
-      background: #fffbe3;
-      border-left: 3px solid var(--warning);
-      padding: 8px 10px;
-      margin-bottom: 8px;
-      border-radius: 0 6px 6px 0;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-    }
-
-    .checklist-item strong {
-      display: block;
-      color: #b45309;
-      margin-bottom: 2px;
-      font-size: 0.82rem;
-    }
-
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -309,6 +269,8 @@
       padding: 18px;
       width: 100%;
       max-width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal label {
@@ -389,6 +351,10 @@
         </button>
         <div id="micError" class="error-msg"></div>
         <audio id="audioPreview" class="audio-preview" controls style="display: none;"></audio>
+        <details id="transcriptBox" style="display: none; margin-top: 8px; font-size: 0.8rem;">
+          <summary style="cursor: pointer; font-weight: 600;">Voir la transcription (Groq)</summary>
+          <textarea id="transcriptText" style="margin-top: 6px; height: 110px;" placeholder="La transcription apparaîtra ici après la génération..."></textarea>
+        </details>
       </div>
 
       <div class="card">
@@ -416,24 +382,29 @@
         <button id="copyLetterBtn" class="btn btn-secondary">
           📋 Copier le courrier
         </button>
+        <button id="mailBtn" class="btn btn-action">
+          ✉️ Envoyer par mail (courrier + résumé)
+        </button>
       </div>
     </div>
 
-    <div class="col-checklist">
-      <div class="card" style="height: 100%; background: #fffdf5; border-color: #fef08a;">
-        <div class="card-title" style="color: #92400e;">
-          💡 N'oublie pas
-        </div>
-        <div id="checklistContent" class="checklist-container">
-          <p class="checklist-placeholder">L'analyse clinique et les recommandations des sociétés savantes s'afficheront ici après la génération du courrier...</p>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div id="configModal" class="modal-overlay">
     <div class="modal">
-      <h3 style="font-size: 1rem; margin-bottom: 10px;">Configuration IA Gemini</h3>
+      <h3 style="font-size: 1rem; margin-bottom: 10px;">Transcription audio (Groq)</h3>
+      <label for="groqKeyInput">Clé API Groq :</label>
+      <input type="password" id="groqKeyInput" placeholder="gsk_..." />
+      <p style="font-size: 0.72rem; color: var(--danger); margin-top: 4px;">
+        ⚠️ Stockée uniquement dans ce navigateur. Clé gratuite sur console.groq.com.
+      </p>
+      <label for="groqModelSelect">Modèle de transcription :</label>
+      <select id="groqModelSelect">
+        <option value="whisper-large-v3-turbo">whisper-large-v3-turbo (rapide, le moins cher)</option>
+        <option value="whisper-large-v3">whisper-large-v3 (plus précis, plus lent)</option>
+      </select>
+
+      <h3 style="font-size: 1rem; margin: 18px 0 10px;">Rédaction IA Gemini</h3>
       
       <label for="connectionMode">Mode de connexion :</label>
       <select id="connectionMode">
@@ -456,8 +427,8 @@
 
       <label for="modelSelect">Modèle Gemini utilisé :</label>
       <select id="modelSelect">
-        <option value="gemini-3.6-flash">gemini-3.6-flash (Recommandé)</option>
-        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Rapide)</option>
+        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Rapide, recommandé)</option>
+        <option value="gemini-3.6-flash">gemini-3.6-flash (Plus précis, plus lent)</option>
         <option value="custom">Saisir manuellement...</option>
       </select>
 
@@ -511,10 +482,10 @@
     const notesText = document.getElementById('notesText');
     const catText = document.getElementById('catText');
     const letterText = document.getElementById('letterText');
-    const checklistContent = document.getElementById('checklistContent');
     
     const copyLetterBtn = document.getElementById('copyLetterBtn');
     const copyCabinetSummaryBtn = document.getElementById('copyCabinetSummaryBtn');
+    const mailBtn = document.getElementById('mailBtn');
     const generateLetterBtn = document.getElementById('generateLetterBtn');
     const micError = document.getElementById('micError');
 
@@ -531,6 +502,14 @@
     const customModelContainer = document.getElementById('customModelContainer');
     const customModelInput = document.getElementById('customModelInput');
     const toast = document.getElementById('toast');
+    const groqKeyInput = document.getElementById('groqKeyInput');
+    const groqModelSelect = document.getElementById('groqModelSelect');
+    const transcriptBox = document.getElementById('transcriptBox');
+    const transcriptText = document.getElementById('transcriptText');
+
+    // Cache : on ne retranscrit pas le même enregistrement deux fois
+    let cachedTranscript = null;
+    let cachedTranscriptBlob = null;
 
     function autoResizeLetterTextarea() {
       letterText.style.height = 'auto';
@@ -550,14 +529,17 @@
       micError.style.display = 'none';
       audioChunks = [];
       audioBlob = null;
+      cachedTranscript = null;
+      cachedTranscriptBlob = null;
+      transcriptBox.style.display = 'none';
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         
-        let options = {};
-        if (MediaRecorder.isTypeSupported('audio/webm')) options = { mimeType: 'audio/webm' };
-        else if (MediaRecorder.isTypeSupported('audio/mp4')) options = { mimeType: 'audio/mp4' };
-        else if (MediaRecorder.isTypeSupported('audio/ogg')) options = { mimeType: 'audio/ogg' };
+        let options = { audioBitsPerSecond: 32000 };
+        if (MediaRecorder.isTypeSupported('audio/webm')) options.mimeType = 'audio/webm';
+        else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
+        else if (MediaRecorder.isTypeSupported('audio/ogg')) options.mimeType = 'audio/ogg';
 
         mediaRecorder = new MediaRecorder(stream, options);
 
@@ -614,15 +596,6 @@
       micError.style.display = 'block';
     }
 
-    function blobToBase64(blob) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    }
-
     function copyToClipboard(text, successMsg) {
       if (!text.trim()) {
         showToast("Rien à copier !");
@@ -663,6 +636,39 @@
       copyToClipboard(summary, "Résumé cab copié !");
     });
 
+    mailBtn.addEventListener('click', () => {
+      const letter = letterText.value.trim();
+      const notes = notesText.value.trim();
+      const cat = catText.value.trim();
+
+      if (!letter) {
+        showToast("Générez d'abord le courrier.");
+        return;
+      }
+
+      let body = "COURRIER DE CONSULTATION\n\n" + letter;
+      if (notes || cat) {
+        body += "\n\n----------------------------------------\nRÉSUMÉ FICHE CAB\n\n";
+        if (notes) body += "NOTES :\n" + notes + "\n\n";
+        if (cat) body += "CAT :\n" + cat;
+      }
+      body = body.trim();
+
+      const age = patientAge.value ? ", " + patientAge.value + " ans" : "";
+      const subject = `Courrier de consultation - ${patientSex.value}${age}`;
+
+      // Les liens mailto: ont une limite de taille selon les messageries :
+      // au-delà, on copie tout dans le presse-papier et on ouvre un mail vide.
+      const MAX_MAILTO_BODY = 6000;
+      const encodedBody = encodeURIComponent(body);
+      if (encodedBody.length > MAX_MAILTO_BODY) {
+        copyToClipboard(body, "Texte trop long pour le mail : copié, collez-le dans le message !");
+        window.location.href = `mailto:?subject=${encodeURIComponent(subject)}`;
+        return;
+      }
+      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodedBody}`;
+    });
+
     modelSelect.addEventListener('change', () => {
       customModelContainer.style.display = (modelSelect.value === 'custom') ? 'block' : 'none';
     });
@@ -681,8 +687,10 @@
       directModeContainer.style.display = (savedMode === 'proxy') ? 'none' : 'block';
       proxyUrlInput.value = savedProxyUrl;
       apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+      groqKeyInput.value = localStorage.getItem('groq_api_key') || '';
+      groqModelSelect.value = localStorage.getItem('groq_model') || 'whisper-large-v3-turbo';
 
-      const savedModel = localStorage.getItem('gemini_model') || 'gemini-3.6-flash';
+      const savedModel = localStorage.getItem('gemini_model') || 'gemini-3.5-flash-lite';
       if (Array.from(modelSelect.options).some(opt => opt.value === savedModel)) {
         modelSelect.value = savedModel;
         customModelContainer.style.display = 'none';
@@ -717,13 +725,25 @@
         localStorage.setItem('gemini_api_key', key);
       }
 
+      const groqKey = groqKeyInput.value.trim();
+      if (groqKey) localStorage.setItem('groq_api_key', groqKey);
+      else localStorage.removeItem('groq_api_key');
+      localStorage.setItem('groq_model', groqModelSelect.value);
+
       localStorage.setItem('gemini_connection_mode', mode);
-      localStorage.setItem('gemini_model', selectedModel || 'gemini-3.6-flash');
+      localStorage.setItem('gemini_model', selectedModel || 'gemini-3.5-flash-lite');
       showToast("Configuration enregistrée !");
       configModal.classList.remove('active');
     });
 
-    async function callGeminiApiMultimodal(rawModelName, parts) {
+    // Réglages économes : réflexion minimale, sortie plafonnée, température basse
+    const GEN_CONFIG = {
+      temperature: 0.3,
+      maxOutputTokens: 1500,
+      thinkingConfig: { thinkingLevel: "minimal" }
+    };
+
+    async function callGeminiApiMultimodal(rawModelName, parts, generationConfig) {
       const cleanModelName = rawModelName.replace(/^models\//, '').trim();
       const mode = localStorage.getItem('gemini_connection_mode') || 'proxy';
 
@@ -733,7 +753,7 @@
         return await fetch(proxyUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: cleanModelName, parts })
+          body: JSON.stringify({ model: cleanModelName, parts, generationConfig })
         });
       }
 
@@ -743,26 +763,35 @@
       return await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: parts }] })
+        body: JSON.stringify({ contents: [{ parts: parts }], generationConfig })
       });
     }
 
-    function formatChecklistHTML(rawText) {
-      const items = rawText.split(/\n(?=\d+[\.\)]|\-|\*)/).filter(item => item.trim().length > 0);
-      if (items.length === 0) return `<p class="checklist-placeholder">${rawText}</p>`;
+    // Transcription via Groq (Whisper) : l'audio n'est plus envoyé à Gemini
+    async function transcribeWithGroq(blob) {
+      const groqKey = localStorage.getItem('groq_api_key');
+      if (!groqKey) throw new Error("Clé API Groq manquante. Ouvrez les Paramètres ⚙️.");
 
-      let html = '<ul class="checklist-list">';
-      items.forEach(item => {
-        const clean = item.replace(/^[\d\.\-\*\)\s]+/, '').trim();
-        const parts = clean.split(':');
-        if (parts.length > 1) {
-          html += `<li class="checklist-item"><strong>${parts[0].trim()}</strong>${parts.slice(1).join(':').trim()}</li>`;
-        } else {
-          html += `<li class="checklist-item">${clean}</li>`;
-        }
+      const mime = (blob.type || 'audio/webm').split(';')[0];
+      const ext = mime.includes('mp4') ? 'mp4' : mime.includes('ogg') ? 'ogg' : mime.includes('wav') ? 'wav' : 'webm';
+
+      const form = new FormData();
+      form.append('file', blob, `dictee.${ext}`);
+      form.append('model', localStorage.getItem('groq_model') || 'whisper-large-v3-turbo');
+      form.append('language', 'fr');
+      form.append('temperature', '0');
+      form.append('response_format', 'json');
+      // Vocabulaire indicatif pour améliorer la reconnaissance des termes médicaux
+      form.append('prompt', "Consultation de chirurgie digestive : cholécystectomie, éventration, hernie inguinale, colectomie, sigmoïdite, appendicectomie, coloscopie, TDM, IRM, RCP, CAT, cœlioscopie, ASA, anticoagulants.");
+
+      const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${groqKey}` },
+        body: form
       });
-      html += '</ul>';
-      return html;
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(`Groq : ${data.error?.message || response.status}`);
+      return (data.text || '').trim();
     }
 
     generateLetterBtn.addEventListener('click', async () => {
@@ -785,102 +814,90 @@
         alert("Veuillez réaliser un enregistrement audio ou remplir les zones Notes / CAT.");
         return;
       }
+      if (audioBlob && !localStorage.getItem('groq_api_key')) {
+        alert("Veuillez renseigner votre clé API Groq pour la transcription (⚙️ Paramètres).");
+        return;
+      }
 
       generateLetterBtn.disabled = true;
-      generateLetterBtn.textContent = "⏳ Analyse audio, rédaction & recommandations...";
-      letterText.value = "Analyse de l'audio et rédaction du courrier par l'IA...";
-      checklistContent.innerHTML = "<p class='checklist-placeholder'>🔍 Analyse des risques et des recommandations des sociétés savantes en cours...</p>";
-
-      const promptLetter = `Je suis un chirurgien digestif. Rédige un courrier médical de consultation à partir de l'audio enregistré et des notes fournies.
-
-CONSIGNE STRICTE :
-NE RAJOUTE AUCUNE PHRASE D'INTRODUCTION, AUCUN TITRE, AUCUNE LIGNE D'OBJET NI EN-TÊTE.
-LE COURRIER DOIT IMPÉRATIVEMENT COMMENCER DIRECTEMENT PAR LE PREMIER MOT : "Il s'agit d'un ${sex === 'Homme' ? 'homme' : 'une femme'}${age ? ' de ' + age : ''}...".
-
-STRUCTURE DU COURRIER :
-1. Corps du Texte : Synthétise la dictée contenue dans l'audio et les notes textuelles en un langage médical formel, droit au but (4-5 paragraphes, ou 6-7 si cas oncologique/complexe). Ne rajoute pas d'explication aux termes médicaux entre parenthèses.
-2. Conclusion/Appel à l'Action (basé sur la CAT) : Résumer en une phrase ce qui est attendu ("Il y a donc une indication opératoire pour..." ou la prise en charge retenue), la technique opératoire, la voie d'abord et le mode d'hospitalisation si opératoire. Préciser que les risques principaux ont été énoncés (les citer entre parenthèses).
-
-INFORMATIONS DU PATIENT :
-- Sexe : ${sex}
-- Âge : ${age || "Non précisé"}
-
-ÉLÉMENTS DE LA CONSULTATION :
-- Notes complémentaires : "${notes}"
-- Conduite À Tenir (CAT) : "${cat}"`;
-
-      const promptChecklist = `Tu es un assistant de chirurgie viscérale et digestive expert. 
-Analyse l'audio et les notes médicales ci-jointes pour ce patient (${sex}, ${age || "âge non précisé"}).
-En fonction de la pathologie évoquée, de la conduite à tenir (CAT: "${cat}") et des facteurs de risques détectés, propose 4 à 5 éléments COURTS et PERTINENTS à ne pas oublier ou à vérifier dans la prise en charge du patient selon les recommandations actuelles des sociétés savantes (HAS, ACHBT, SFCD, etc.).
-
-Exemples d'éléments à chercher :
-- Bilan préopératoire manquant (scanner < 3 mois, consultation d'anesthésie, marqueurs, TDM thoracique si oncologie...)
-- Précautions / Comorbidités (anticoagulants, arrêt tabac, dénutrition, IMC, antécédents cardiovasculaires)
-- Checklist médico-légale (information éclairée spécifique, staff RCP si cancer, bilan de résection...)
-
-FORMAT EXIGÉ (fournis uniquement la liste structurée ainsi) :
-1. Titre court du point : Explication très concise en 1 phrase.
-2. Titre court du point : Explication très concise en 1 phrase.
-3. Titre court du point : Explication très concise en 1 phrase.
-4. Titre court du point : Explication très concise en 1 phrase.
-5. Titre court du point : Explication très concise en 1 phrase.`;
+      letterText.value = "Transcription de l'audio (Groq)...";
 
       try {
-        let audioPart = null;
+        // ÉTAPE 1 — Audio -> texte via Groq (une seule fois par enregistrement)
+        let transcript = "";
         if (audioBlob) {
-          const base64Audio = await blobToBase64(audioBlob);
-          const mimeType = audioBlob.type.split(';')[0] || 'audio/webm';
-          audioPart = { inline_data: { mime_type: mimeType, data: base64Audio } };
+          if (cachedTranscriptBlob === audioBlob && cachedTranscript !== null) {
+            transcript = cachedTranscript;
+          } else {
+            generateLetterBtn.textContent = "⏳ Transcription audio (Groq)...";
+            transcript = await transcribeWithGroq(audioBlob);
+            cachedTranscript = transcript;
+            cachedTranscriptBlob = audioBlob;
+          }
+          transcriptText.value = transcript;
+          transcriptBox.style.display = 'block';
         }
+
+        if (!transcript && !notes && !cat) {
+          throw new Error("La transcription est vide (audio inaudible ?). Réessayez ou saisissez des notes.");
+        }
+
+        // ÉTAPE 2 — Un seul appel Gemini (texte uniquement) : courrier
+        generateLetterBtn.textContent = "⏳ Rédaction du courrier (Gemini)...";
+        letterText.value = "Rédaction du courrier par l'IA...";
+
+        const intro = sex === 'Homme' ? 'un homme' : 'une femme';
+        const prompt = `Chirurgien digestif : rédige un courrier de consultation.
+
+PATIENT : ${sex}, ${age || "âge non précisé"}
+DICTÉE (transcription) : "${transcript || "aucune"}"
+NOTES : "${notes}"
+CAT : "${cat}"
+
+Aucune introduction, titre, objet ni en-tête. Commence directement par : "Il s'agit d'${intro}${age ? ' de ' + age : ''}...".
+- Corps : synthèse de la dictée et des notes en langage médical formel, droit au but (4-5 paragraphes, 6-7 si oncologique/complexe). Pas d'explication des termes médicaux entre parenthèses.
+- Conclusion (basée sur la CAT) : une phrase sur ce qui est attendu ("Il y a donc une indication opératoire pour..." ou prise en charge retenue), technique opératoire, voie d'abord, mode d'hospitalisation si opératoire. Préciser que les risques principaux ont été énoncés (les citer entre parenthèses).`;
+
+        const parts = [{ text: prompt }];
 
         // Modèles de secours : uniquement ceux disponibles sur le tier gratuit (pas de "pro")
-        let primaryModel = (localStorage.getItem('gemini_model') || 'gemini-3.6-flash').replace(/^models\//, '').trim();
-        const fallbackModels = [...new Set([primaryModel, 'gemini-3.6-flash', 'gemini-3.5-flash-lite'])];
+        const primaryModel = (localStorage.getItem('gemini_model') || 'gemini-3.5-flash-lite').replace(/^models\//, '').trim();
+        const fallbackModels = [...new Set([primaryModel, 'gemini-3.5-flash-lite', 'gemini-3.6-flash'])];
 
-        const letterParts = audioPart ? [audioPart, { text: promptLetter }] : [{ text: promptLetter }];
-        const checklistParts = audioPart ? [audioPart, { text: promptChecklist }] : [{ text: promptChecklist }];
+        const extractText = (data) => (data.candidates?.[0]?.content?.parts || [])
+          .filter(pt => pt.text && !pt.thought).map(pt => pt.text).join('');
 
-        const runApiCall = async (parts) => {
-          let lastErr = "";
-          for (const model of fallbackModels) {
-            try {
-              const response = await callGeminiApiMultimodal(model, parts);
-              const data = await response.json();
-              if (data.error) { lastErr = `[${model}] ${data.error.message}`; continue; }
-              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (text) return text;
-            } catch (e) { lastErr = e.message; }
-          }
-          throw new Error(lastErr || "Échec API");
-        };
-
-        const [letterResult, checklistResult] = await Promise.allSettled([
-          runApiCall(letterParts),
-          runApiCall(checklistParts)
-        ]);
-
-        if (letterResult.status === 'fulfilled') {
-          let genText = letterResult.value;
-          const match = genText.match(/Il s'agit[\s\S]*/i);
-          if (match) genText = match[0];
-
-          letterText.value = genText.trim();
-          letterText.removeAttribute('readonly');
-          autoResizeLetterTextarea();
-          showToast("Courrier généré !");
-        } else {
-          letterText.value = "Erreur lors de la génération du courrier : " + letterResult.reason.message;
+        let fullText = "";
+        let lastErr = "";
+        for (const model of fallbackModels) {
+          try {
+            let response = await callGeminiApiMultimodal(model, parts, GEN_CONFIG);
+            let data = await response.json();
+            // Si le modèle refuse le réglage de réflexion, on réessaie sans
+            if (data.error && /thinking/i.test(data.error.message || '')) {
+              const { thinkingConfig, ...lightConfig } = GEN_CONFIG;
+              response = await callGeminiApiMultimodal(model, parts, lightConfig);
+              data = await response.json();
+            }
+            if (data.error) { lastErr = `[${model}] ${data.error.message}`; continue; }
+            const text = extractText(data);
+            if (text) { fullText = text; break; }
+          } catch (e) { lastErr = e.message; }
         }
+        if (!fullText) throw new Error(lastErr || "Échec API Gemini");
 
-        if (checklistResult.status === 'fulfilled') {
-          checklistContent.innerHTML = formatChecklistHTML(checklistResult.value);
-        } else {
-          checklistContent.innerHTML = "<p class='checklist-placeholder' style='color:red;'>Erreur lors du calcul des recommandations.</p>";
-        }
+        let letterPart = fullText;
+        const match = letterPart.match(/Il s'agit[\s\S]*/i);
+        if (match) letterPart = match[0];
+
+        letterText.value = letterPart.trim();
+        letterText.removeAttribute('readonly');
+        autoResizeLetterTextarea();
+        showToast("Courrier généré !");
 
       } catch (err) {
+        letterText.value = "Erreur : " + err.message;
         alert("Erreur de traitement : " + err.message);
-        letterText.value = "Erreur de traitement.";
       }
 
       generateLetterBtn.disabled = false;
