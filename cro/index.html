@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OpéReport — Comptes rendus opératoires</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #F4F6F4;
+    --bg-panel: #FFFFFF;
+    --bg-sunken: #EAEEEB;
+    --ink: #152420;
+    --ink-soft: #52655C;
+    --ink-faint: #8B9992;
+    --accent: #0E5C53;
+    --accent-dark: #093D37;
+    --accent-soft: #DCEAE6;
+    --gold: #96701C;
+    --gold-soft: #F1E6CC;
+    --red: #9C3B2B;
+    --red-soft: #F3E0DB;
+    --border: #D8DEDA;
+    --border-strong: #B9C4BE;
+    --shadow: 0 1px 2px rgba(21,36,32,0.06), 0 8px 24px rgba(21,36,32,0.06);
+    --radius: 3px;
+    color-scheme: light;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #0F1613;
+      --bg-panel: #16201C;
+      --bg-sunken: #0B100E;
+      --ink: #E9EFEB;
+      --ink-soft: #A9B9B1;
+      --ink-faint: #6E8079;
+      --accent: #5FC5B1;
+      --accent-dark: #3E9C8B;
+      --accent-soft: #1B322C;
+      --gold: #D2AA53;
+      --gold-soft: #2E2717;
+      --red: #D98371;
+      --red-soft: #33201B;
+      --border: #263129;
+      --border-strong: #354139;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1613;
+    --bg-panel: #16201C;
+    --bg-sunken: #0B100E;
+    --ink: #E9EFEB;
+    --ink-soft: #A9B9B1;
+    --ink-faint: #6E8079;
+    --accent: #5FC5B1;
+    --accent-dark: #3E9C8B;
+    --accent-soft: #1B322C;
+    --gold: #D2AA53;
+    --gold-soft: #2E2717;
+    --red: #D98371;
+    --red-soft: #33201B;
+    --border: #263129;
+    --border-strong: #354139;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    font-size: 14.5px;
+    line-height: 1.5;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  h1, h2, h3 { font-family: 'Source Serif 4', Georgia, serif; font-weight: 600; margin: 0; color: var(--ink); }
+  ::selection { background: var(--accent-soft); }
+  button, input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
+  a { color: var(--accent-dark); }
+  textarea { resize: vertical; }
+
+  .app { display: flex; min-height: 100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: 232px;
+    flex-shrink: 0;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    padding: 22px 16px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 8px; padding: 0 8px; }
+  .brand .mark { font-family: 'Source Serif 4', serif; font-weight: 700; font-size: 20px; color: var(--accent-dark); }
+  .brand .sub { font-size: 10.5px; color: var(--ink-faint); letter-spacing: 0.02em; }
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav button {
+    display: flex; align-items: center; gap: 10px;
+    background: none; border: none; text-align: left;
+    padding: 9px 10px; border-radius: var(--radius);
+    color: var(--ink-soft); cursor: pointer;
+    font-size: 13.5px; font-weight: 500;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .nav button:hover { background: var(--bg-sunken); color: var(--ink); }
+  .nav button.active { background: var(--accent-soft); color: var(--accent-dark); }
+  .nav .icon { width: 17px; text-align: center; opacity: 0.85; }
+  .nav-primary {
+    margin-top: 4px; background: var(--accent); color: white !important;
+    padding: 10px 12px; border-radius: var(--radius); font-weight: 600;
+  }
+  .nav-primary:hover { background: var(--accent-dark); color: white !important; }
+
+  .sidebar-foot { margin-top: auto; padding: 10px 8px; border-top: 1px solid var(--border); }
+  .sidebar-foot .who { font-size: 12px; color: var(--ink-soft); }
+  .sidebar-foot .who b { color: var(--ink); font-weight: 600; }
+  .sidebar-foot button { background: none; border: none; color: var(--ink-faint); font-size: 11.5px; cursor: pointer; padding: 4px 0; text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Mobile top bar */
+  .mobile-bar { display: none; }
+
+  /* ---------- Main ---------- */
+  .main { flex: 1; min-width: 0; padding: 32px 40px 60px; max-width: 1180px; }
+  .page-head { margin-bottom: 26px; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .page-head h1 { font-size: 24px; }
+  .page-head .desc { color: var(--ink-soft); font-size: 13px; margin-top: 4px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 14px; border-radius: var(--radius);
+    border: 1px solid var(--border-strong); background: var(--bg-panel);
+    cursor: pointer; font-weight: 500; font-size: 13px; color: var(--ink);
+    transition: border-color 0.12s ease, background 0.12s ease;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+  .btn-danger { color: var(--red); border-color: var(--red-soft); }
+  .btn-danger:hover { border-color: var(--red); }
+  .btn-ghost { border-color: transparent; background: none; }
+  .btn-ghost:hover { background: var(--bg-sunken); border-color: transparent; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn:disabled:hover { border-color: var(--border-strong); background: var(--bg-panel); }
+
+  /* ---------- Dashboard ---------- */
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  .stat-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .stat-card .num { font-family: 'Source Serif 4', serif; font-size: 30px; font-weight: 600; color: var(--accent-dark); }
+  .stat-card .label { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+  .section-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 30px 0 12px; }
+  .section-title:first-child { margin-top: 0; }
+
+  .report-list { display: flex; flex-direction: column; gap: 8px; }
+  .report-row {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 16px; cursor: pointer; transition: border-color 0.12s ease;
+  }
+  .report-row:hover { border-color: var(--accent); }
+  .report-row .who { flex: 1; min-width: 0; }
+  .report-row .who .name { font-weight: 600; font-size: 14px; }
+  .report-row .who .meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .status-pill { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+  .status-brouillon { background: var(--gold-soft); color: var(--gold); }
+  .status-finalise { background: var(--accent-soft); color: var(--accent-dark); }
+  .empty-state {
+    border: 1px dashed var(--border-strong); border-radius: var(--radius);
+    padding: 40px 20px; text-align: center; color: var(--ink-soft);
+  }
+  .empty-state .big { font-family: 'Source Serif 4', serif; font-size: 17px; color: var(--ink); margin-bottom: 6px; }
+
+  /* ---------- Template picker ---------- */
+  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .tpl-card {
+    background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; cursor: pointer; transition: border-color 0.12s ease, transform 0.08s ease;
+  }
+  .tpl-card:hover { border-color: var(--accent); }
+  .tpl-card .spec { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gold); font-weight: 600; margin-bottom: 6px; }
+  .tpl-card h3 { font-size: 15.5px; }
+  .tpl-card p { font-size: 12.5px; color: var(--ink-soft); margin: 6px 0 0; }
+  .tpl-card .row-actions { margin-top: 10px; display: flex; gap: 6px; }
+
+  /* ---------- Editor layout ---------- */
+  .editor-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 980px) { .editor-wrap { grid-template-columns: 1fr; } }
+
+  .form-panel, .preview-panel {
+    background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .panel-head {
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-sunken);
+  }
+  .panel-head h2 { font-size: 13px; letter-spacing: 0.02em; color: var(--ink-soft); font-family: 'IBM Plex Sans'; font-weight: 600; }
+  .panel-body { padding: 18px; max-height: calc(100vh - 190px); overflow-y: auto; }
+
+  .fieldset { margin-bottom: 22px; }
+  .fieldset legend, .fieldset .legend { font-size: 11.5px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; display: block; }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { margin-bottom: 12px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; font-weight: 500; }
+  .field input[type=text], .field input[type=date], .field input[type=time], .field select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius);
+    background: var(--bg); color: var(--ink);
+  }
+  .field input:focus, .field textarea:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+  .field-textarea-wrap { position: relative; }
+  .field textarea {
+    width: 100%; min-height: 70px; padding: 8px 40px 8px 10px; border: 1px solid var(--border-strong);
+    border-radius: var(--radius); background: var(--bg); color: var(--ink); line-height: 1.45;
+  }
+  .field textarea.tall { min-height: 120px; }
+  .mic-btn {
+    position: absolute; top: 6px; right: 6px; width: 28px; height: 28px;
+    border-radius: 50%; border: 1px solid var(--border-strong); background: var(--bg-panel);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    color: var(--ink-soft); font-size: 13px; padding: 0;
+  }
+  .mic-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
+  .mic-btn.recording { background: var(--red); border-color: var(--red); color: white; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(156,59,43,0.4);} 50% { box-shadow: 0 0 0 6px rgba(156,59,43,0);} }
+  .mic-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .mic-hint { font-size: 10.5px; color: var(--ink-faint); margin-top: 3px; }
+
+  /* Preview / document */
+  .doc {
+    background: white; color: #16211C; padding: 34px 30px; border-radius: 2px;
+    font-family: 'Source Serif 4', serif; font-size: 13px; line-height: 1.6;
+    border: 1px solid var(--border);
+  }
+  :root[data-theme="dark"] .doc, :root:not([data-theme="light"]) .doc { border-color: #2A3630; }
+  .doc .doc-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #16211C; padding-bottom: 10px; margin-bottom: 16px; }
+  .doc .doc-head .org { font-weight: 600; font-size: 13.5px; }
+  .doc .doc-head .type { text-align: right; font-size: 11px; color: #52655C; text-transform: uppercase; letter-spacing: 0.05em; }
+  .doc .id-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 18px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; margin-bottom: 18px; background: #F4F6F4; padding: 10px 14px; border-radius: 2px; }
+  .doc .id-grid div b { font-weight: 600; }
+  .doc h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #096B5E; margin: 16px 0 4px; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; }
+  .doc h5 { font-size: 11.5px; letter-spacing: 0.01em; color: #16211C; margin: 12px 0 3px; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; }
+  .doc p { margin: 0 0 4px; white-space: pre-wrap; }
+  .doc .empty-field { color: #A9B4AE; font-style: italic; }
+  .doc .sign { margin-top: 26px; padding-top: 12px; border-top: 1px solid #D8DEDA; font-family: 'IBM Plex Sans', sans-serif; font-size: 11.5px; color: #52655C; }
+
+  .editor-actions { display: flex; gap: 8px; padding: 14px 18px; border-top: 1px solid var(--border); background: var(--bg-sunken); flex-wrap: wrap; }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(10,16,14,0.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+  .modal { background: var(--bg-panel); border-radius: var(--radius); width: 420px; max-width: 100%; border: 1px solid var(--border); box-shadow: var(--shadow); }
+  .modal-head { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .modal-head h3 { font-size: 16px; }
+  .modal-body { padding: 18px 20px; }
+  .modal-foot { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+  .modal-body .field { margin-bottom: 14px; }
+
+  .toast {
+    position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 20px; font-size: 13px;
+    box-shadow: var(--shadow); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+
+  .banner { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-soft); border-radius: var(--radius); padding: 10px 14px; font-size: 12.5px; margin-bottom: 20px; }
+  .banner.info { background: var(--accent-soft); color: var(--accent-dark); }
+
+  @media (max-width: 760px) {
+    .sidebar { display: none; }
+    .mobile-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; background: var(--bg-panel);
+      border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20;
+      overflow-x: auto;
+    }
+    .mobile-bar .brand .mark { font-size: 16px; }
+    .mobile-bar .nav { display: flex; flex-direction: row; gap: 4px; }
+    .mobile-bar .nav button { white-space: nowrap; padding: 6px 9px; font-size: 12.5px; }
+    .main { padding: 20px 16px 40px; }
+    .stat-row { grid-template-columns: 1fr 1fr; }
+    .field-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="mark">OpéReport</span><span class="sub">personnel</span></div>
+    <nav class="nav" id="nav">
+      <button data-view="dashboard" class="active"><span class="icon">&#8962;</span>Tableau de bord</button>
+      <button data-view="list"><span class="icon">&#128196;</span>Mes comptes rendus</button>
+      <button data-view="templates"><span class="icon">&#9776;</span>Modèles</button>
+      <button data-view="settings"><span class="icon">&#9881;</span>Réglages</button>
+      <button data-view="new" class="nav-primary"><span class="icon">+</span>Nouveau compte rendu</button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="who">Dr <b id="sfSurgeon">—</b></div>
+      <button id="wipeBtn">Effacer toutes les données</button>
+    </div>
+  </aside>
+
+  <div class="mobile-bar">
+    <div class="brand"><span class="mark">OpéReport</span></div>
+    <nav class="nav" id="navMobile"></nav>
+  </div>
+
+  <main class="main" id="main"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   OpéReport — générateur personnel de comptes rendus opératoires
+   Stockage: localStorage du navigateur (rien n'est envoyé à un serveur).
+   ========================================================= */
+
+const STORE_KEYS = { reports: 'opereport_reports', templates: 'opereport_templates', settings: 'opereport_settings' };
+
+const FIELD_DEFS = [
+  { key: 'installation', label: 'Installation du patient', tall: false },
+  { key: 'voieAbord', label: "Voie d'abord", tall: false },
+  { key: 'exploration', label: 'Exploration chirurgicale', tall: true },
+  { key: 'gestes', label: 'Gestes effectués', tall: true },
+  { key: 'materiel', label: 'Matériel implanté (marque / modèle de prothèse)', tall: false },
+];
+
+/* Champ "Rappel clinique" — séparé de FIELD_DEFS car affiché dans son propre encart,
+   avant la section "Intervention" du document. */
+const RAPPEL_FIELD = { key: 'rappelClinique', label: 'Rappel clinique', tall: true };
+
+/* Intitulés d'intervention standards proposés en un clic, avec leurs variantes. */
+const STANDARD_TITLES = [
+  {
+    id: 'lichtenstein', label: 'Hernie inguinale — Lichtenstein',
+    base: 'Cure de hernie inguinale selon Lichtenstein',
+    sides: ['droite', 'gauche', 'bilatérale'],
+  },
+  {
+    id: 'tep', label: 'Hernie inguinale — TEP cœlioscopique',
+    base: 'Cure de hernie inguinale par voie cœlioscopique TEP',
+  },
+  {
+    id: 'appendicectomie', label: 'Appendicectomie cœlioscopique',
+    base: 'Appendicectomie par cœlioscopie',
+  },
+  {
+    id: 'cholecystectomie', label: 'Cholécystectomie cœlioscopique',
+    base: 'Cholécystectomie par cœlioscopie',
+    modifier: 'avec cholangiographie',
+  },
+];
+
+const SPECIALTY_ORDER = ['Général', 'Paroi', 'Digestif', 'Proctologie', 'Dispositifs implantables'];
+
+const DEFAULT_TEMPLATES = [
+  { id: 'tpl-generic', name: 'Compte rendu vierge', specialty: 'Général', titre: '', defaults: {} },
+
+  /* ---------- Paroi / hernies ---------- */
+  {
+    id: 'tpl-lichtenstein', name: 'Hernie inguinale — Lichtenstein', specialty: 'Paroi',
+    titre: 'Cure de hernie inguinale selon Lichtenstein',
+    defaults: {
+      rappelClinique: 'Hernie inguinale oblique externe.',
+      voieAbord: "Incision inguinale. Ouverture de l'aponévrose de l'oblique externe.",
+      exploration: "Section du crémaster et du pédicule funiculaire. Squelettisation des éléments du cordon. Dissection du sac herniaire et du lipome, qui sont réintégrés en pré-péritonéal.",
+      gestes: "Fermeture de l'orifice inguinal profond et plastie du fascia transversalis, retendu par un surjet de Vicryl 2/0. Mise en place d'une prothèse Parietex Progrip fendue selon Lichtenstein, fixée à l'arcade crurale et à l'épine du pubis par un fil monobrin 2/0 non résorbable. Fermeture de l'aponévrose du grand oblique par un surjet de fil résorbable 2/0. Fermeture du plan sous-cutané par un surjet de fil résorbable 2/0 et fermeture cutanée intradermique par un surjet de monofilament résorbable 2/0.",
+      materiel: 'Prothèse Parietex Progrip, fil monobrin 2/0 non résorbable, Vicryl 2/0, monofilament résorbable 2/0.',
+    }
+  },
+  {
+    id: 'tpl-tep', name: 'Hernie inguinale — TEP cœlioscopique', specialty: 'Paroi',
+    titre: 'Cure de hernie inguinale par voie cœlioscopique TEP',
+    defaults: {
+      rappelClinique: 'Hernie inguinale oblique externe (ou directe).',
+      voieAbord: "Open cœlioscopie rétro-musculaire et pré-péritonéale sous-ombilicale, introduction d'un trocart de 10 mm, insufflation à 12 mmHg. Mise en place sous contrôle de la vue d'un trocart de 5 mm à mi-distance entre le pubis et l'ombilic, puis d'un second trocart de 5 mm à un travers de doigt en dedans de la crête iliaque.",
+      exploration: "Dissection à l'optique en rétro-musculaire, création d'un espace virtuel jusqu'à l'arche pubienne, menée de part et d'autre de la ligne médiane puis poursuivie jusqu'à la crête iliaque, en préservant les vaisseaux épigastriques en haut et le sac péritonéal en bas. Sac herniaire complètement libéré du cordon ; hémostase soigneuse. Orifice inguinal profond complètement libéré.",
+      gestes: "Mise en place sous contrôle de la vue d'une plaque 3D moyenne couvrant complètement l'orifice inguinal profond, avec positionnement du sac herniaire en arrière de la plaque. (En cas de hernie bilatérale : dissection et mise en place d'une plaque de chaque côté, selon la même technique.) Exsufflation sous contrôle de la vue, retrait des trocarts. Fermeture de l'orifice ombilical par un point en X au Vicryl 1 sur l'aponévrose, Caprosyn 3/0 intradermique à la peau.",
+      materiel: 'Plaque 3D Bard moyenne (x2 si bilatérale), fil Vicryl 1, fil Caprosyn 3/0.',
+    }
+  },
+  {
+    id: 'tpl-eventration', name: 'Éventration médiane', specialty: 'Paroi',
+    titre: 'Cure d’éventration médiane avec pose de plaque',
+    defaults: {
+      rappelClinique: 'Éventration médiane.',
+      voieAbord: "Reprise de l'incision médiane.",
+      exploration: "Dissection sous-cutanée permettant de libérer le sac herniaire. Adhésiolyse permettant la dissection du contenu du sac d'éventration. L'épiploon est positionné pour recouvrir l'ensemble des viscères.",
+      gestes: "Mise en place d'un filet prothétique biface en position intra-péritonéale (Parietex® biface, 20 x 15 cm), fixé par des fils non résorbables transfixiants sur les 4 quadrants, débordant largement le collet herniaire d'au moins 4 cm. Pariétorraphie musculo-aponévrotique par points séparés de fil non résorbable. Drainage aspiratif du plan sous-cutané par 1 Redon. Fermeture du plan sous-cutané par un surjet de fil résorbable. Fermeture cutanée par un surjet intradermique de fil résorbable. Sanglage en fin d'intervention.",
+      materiel: 'Filet prothétique biface Parietex® 20 x 15 cm, fils non résorbables transfixiants, 1 drain de Redon.',
+    }
+  },
+  {
+    id: 'tpl-hernie-ombilicale', name: 'Hernie ombilicale', specialty: 'Paroi',
+    titre: 'Cure de hernie ombilicale avec pose de plaque',
+    defaults: {
+      rappelClinique: 'Hernie ombilicale.',
+      voieAbord: 'Incision péri-ombilicale.',
+      exploration: "Dissection sous-cutanée permettant de libérer le sac herniaire. Adhésiolyse permettant la dissection du contenu du sac herniaire. L'épiploon est positionné pour recouvrir l'ensemble des viscères. Dissection pré-péritonéale.",
+      gestes: "Mise en place d'un filet prothétique biface en position pré-péritonéale (Cousin CA.B.S Air 9 cm), fixé par des fils non résorbables transfixiants sur les 4 quadrants, débordant largement le collet herniaire d'au moins 4 cm. Pariétorraphie musculo-aponévrotique par points séparés de Surgipro 1. Fermeture du plan sous-cutané par des fils de Vicryl 2/0. Fermeture cutanée par des points intradermiques de Caprosyn 3/0.",
+      materiel: 'Filet prothétique biface Cousin CA.B.S Air 9 cm, Surgipro 1, Vicryl 2/0, Caprosyn 3/0.',
+    }
+  },
+  {
+    id: 'tpl-hernie-ligne-blanche', name: 'Hernie de la ligne blanche', specialty: 'Paroi',
+    titre: 'Cure de hernie de la ligne blanche avec pose de plaque',
+    defaults: {
+      rappelClinique: 'Hernie de la ligne blanche.',
+      voieAbord: 'Incision médiane sus-ombilicale.',
+      exploration: "Dissection sous-cutanée permettant de libérer le sac herniaire. Adhésiolyse permettant la dissection du contenu du sac herniaire. L'épiploon est positionné pour recouvrir l'ensemble des viscères. Dissection pré-péritonéale.",
+      gestes: "Mise en place d'un filet prothétique biface en position pré-péritonéale (Cousin CA.B.S Air 9 cm), fixé par des fils non résorbables transfixiants sur les 4 quadrants, débordant largement le collet herniaire d'au moins 4 cm. Pariétorraphie musculo-aponévrotique par points séparés de Surgipro 1. Fermeture du plan sous-cutané par des fils de Vicryl 2/0. Fermeture cutanée par des points intradermiques de Caprosyn 3/0.",
+      materiel: 'Filet prothétique biface Cousin CA.B.S Air 9 cm, Surgipro 1, Vicryl 2/0, Caprosyn 3/0.',
+    }
+  },
+
+  /* ---------- Digestif ---------- */
+  {
+    id: 'tpl-appendicectomie', name: 'Appendicectomie', specialty: 'Digestif', titre: 'Appendicectomie par cœlioscopie',
+    defaults: {
+      rappelClinique: 'Appendicite aiguë.',
+      voieAbord: "Open cœlioscopie ombilicale avec introduction d'un trocart de 10 mm, insufflation du pneumopéritoine à 12 mmHg. Introduction sous contrôle de la vue de 2 trocarts de 5 mm en fosse iliaque gauche et en sus-pubien.",
+      exploration: "L'exploration de la cavité abdominale retrouve une appendicite aiguë non compliquée.",
+      gestes: "Électrocoagulation et section du méso-appendice jusqu'à la base appendiculaire, qui est saine. Mise en place d'un endoloop sur la base appendiculaire et section de celle-ci. Retrait de la pièce opératoire dans un sac d'Endocatch et envoi en anatomopathologie. Retrait des trocarts sous contrôle de la vue et exsufflation du pneumopéritoine. Fermeture aponévrotique ombilicale au Vicryl 1 et suture intradermique au Caprosyn 3/0 des orifices cutanés.",
+      materiel: "Endoloop, sac d'extraction (Endocatch), fil Vicryl 1, fil Caprosyn 3/0.",
+    }
+  },
+  {
+    id: 'tpl-cholecystectomie', name: 'Cholécystectomie', specialty: 'Digestif', titre: 'Cholécystectomie par cœlioscopie',
+    defaults: {
+      rappelClinique: 'Lithiase vésiculaire symptomatique.',
+      voieAbord: "Open cœlioscopie ombilicale avec introduction d'un trocart de 10 mm, insufflation du pneumopéritoine à 12 mmHg. Introduction sous contrôle de la vue de 3 trocarts de 5 mm dans l'hypochondre gauche, le flanc droit et l'épigastre.",
+      exploration: "L'exploration de la cavité abdominale retrouve une vésicule à paroi fine.",
+      gestes: "Dissection première du trépied cystique permettant d'individualiser l'artère et le canal cystique. Section entre 2 clips Hemolock du canal et de l'artère cystique. Dissection rétrograde de la vésicule, qui est extraite à l'aide d'un sac par l'orifice ombilical et envoyée en anatomopathologie. Hémostase soigneuse du lit vésiculaire. Retrait des trocarts sous contrôle de la vue et exsufflation du pneumopéritoine. Fermeture aponévrotique ombilicale au Vicryl 1 et suture intradermique au Caprosyn 3/0 des orifices cutanés.",
+      materiel: "Clips Hemolock, sac d'extraction, fil Vicryl 1, fil Caprosyn 3/0.",
+    }
+  },
+  {
+    id: 'tpl-cholecystectomie-cholangio', name: 'Cholécystectomie + cholangiographie', specialty: 'Digestif',
+    titre: 'Cholécystectomie par cœlioscopie avec cholangiographie per-opératoire',
+    defaults: {
+      rappelClinique: 'Lithiase vésiculaire symptomatique.',
+      voieAbord: "Open cœlioscopie ombilicale avec introduction d'un trocart de 10 mm, insufflation du pneumopéritoine à 12 mmHg. Introduction sous contrôle de la vue de 3 trocarts de 5 mm dans l'hypochondre gauche, le flanc droit et l'épigastre.",
+      exploration: "L'exploration de la cavité abdominale retrouve une vésicule à paroi fine.",
+      gestes: "Dissection première du trépied cystique permettant d'individualiser l'artère et le canal cystique. Mise en place du kit de cholangiographie dans le canal cystique. Cholangiographie : bon passage du produit de contraste dans la voie biliaire principale et le duodénum, hépatogramme complet, pas d'obstacle visible. Section entre 2 clips Hemolock du canal et de l'artère cystique. Dissection rétrograde de la vésicule, qui est extraite à l'aide d'un sac par l'orifice ombilical et envoyée en anatomopathologie. Hémostase soigneuse du lit vésiculaire. Retrait des trocarts sous contrôle de la vue et exsufflation du pneumopéritoine. Fermeture aponévrotique ombilicale au Vicryl 1 et suture intradermique au Caprosyn 3/0 des orifices cutanés.",
+      materiel: "Kit de cholangiographie, clips Hemolock, sac d'extraction, fil Vicryl 1, fil Caprosyn 3/0.",
+    }
+  },
+  {
+    id: 'tpl-colectomie-coelio', name: 'Colectomie droite — cœlioscopie', specialty: 'Digestif',
+    titre: 'Colectomie droite par cœlioscopie',
+    defaults: {
+      rappelClinique: 'Tumeur du côlon droit.',
+      installation: "Décubitus dorsal, bras le long du corps. Vérification des points d'appui.",
+      voieAbord: "Open cœlioscopie ombilicale avec introduction d'un trocart de 10 mm, insufflation du pneumopéritoine à 12 mmHg. Mise en place de 3 trocarts de 5 mm en hypochondre gauche, fosse iliaque gauche et hypochondre droit.",
+      exploration: "Exploration de la cavité abdominale : pas d'extension tumorale, pas de carcinose péritonéale, pas de métastase hépatique.",
+      gestes: "Ouverture du ligament gastro-colique et section du grand épiploon à l'aplomb de la ligne médiane, avec abaissement de l'angle colique droit et découverte de la face antérieure du bloc duodéno-pancréatique. Section entre 2 clips de la veine et de l'artère de l'angle colique droit. Poursuite du décollement colo-pariétal de haut en bas en incisant le péritoine de la gouttière pariéto-colique.\n\nDissection du pédicule iléo-bi-caeco-appendiculaire, avec ligature et section entre 2 clips de l'artère et de la veine séparément. Libération des attaches péritonéales du côlon droit et de la racine du mésentère.\n\nExtériorisation du côlon par une mini-laparotomie transversale de 6 cm de l'hypochondre droit, avec protection pariétale par une jupe de plastique. Côlon et tumeur extériorisés sans traction, complément d'hémostase et section du mésocôlon. Section du côlon transverse à sa partie moyenne à l'agrafeuse GIA. Complément d'hémostase et section du mésentère de la dernière anse iléale, puis section de la dernière anse iléale.\n\nRétablissement de continuité par anastomose iléo-colique termino-latérale par 2 hémisurjets de fil monobrin 4/0 résorbable. Réintégration de l'anastomose, recouverte par le grand épiploon restant.\n\nFermeture pariétale en deux plans par surjets de fil tressé résorbable n°1. Fermeture cutanée intradermique par fil monobrin 3/0 résorbable. Compte des compresses et instruments correct en fin d'intervention.",
+      materiel: 'Clips, agrafeuse GIA, fil monobrin 4/0 résorbable, jupe de protection pariétale.',
+    }
+  },
+  {
+    id: 'tpl-colectomie-monotrocart', name: 'Colectomie droite — monotrocart', specialty: 'Digestif',
+    titre: 'Colectomie droite cœlioscopique monotrocart',
+    defaults: {
+      rappelClinique: 'Tumeur du côlon droit.',
+      installation: "Décubitus dorsal, bras le long du corps. Vérification des points d'appui.",
+      voieAbord: "Open cœlioscopie ombilicale avec introduction d'un monotrocart (Gelpoint) ou d'un trocart de 10 mm, insufflation du pneumopéritoine à 12 mmHg. Mise en place de 3 trocarts de 5 mm en hypogastre, en épigastre et dans l'hypochondre droit.",
+      exploration: "Exploration de la cavité abdominale : pas d'extension tumorale, pas de carcinose péritonéale, pas de métastase hépatique.",
+      gestes: "Ouverture du ligament gastro-colique et section du grand épiploon à l'aplomb de la ligne médiane, avec abaissement de l'angle colique droit et découverte de la face antérieure du bloc duodéno-pancréatique. Section entre 2 clips de la veine et de l'artère de l'angle colique droit. Poursuite du décollement colo-pariétal de haut en bas en incisant le péritoine de la gouttière pariéto-colique.\n\nDissection du pédicule iléo-bi-caeco-appendiculaire, avec ligature et section entre 2 clips de l'artère et de la veine séparément. Libération des attaches péritonéales du côlon droit et de la racine du mésentère, avant d'extérioriser le côlon par une mini-laparotomie transversale de 6 cm de l'hypochondre droit avec protection pariétale par une jupe de plastique.\n\nCôlon et tumeur extériorisés sans traction, complément d'hémostase et section du mésocôlon. Section du côlon transverse à sa partie moyenne à l'agrafeuse GIA. Complément d'hémostase et section du mésentère de la dernière anse iléale, puis section de la dernière anse iléale.\n\nRétablissement de continuité par anastomose iléo-colique termino-latérale par 2 hémisurjets de fil monobrin 4/0 résorbable. Réintégration de l'anastomose, recouverte par le grand épiploon restant.\n\nFermeture pariétale en deux plans par surjets de fil tressé résorbable n°1. Fermeture cutanée intradermique par fil monobrin 3/0 résorbable.",
+      materiel: 'Monotrocart Gelpoint (ou trocart 10 mm), clips, agrafeuse GIA, fil monobrin 4/0 résorbable, jupe de protection pariétale.',
+    }
+  },
+  {
+    id: 'tpl-colectomie-robot', name: 'Colectomie droite — robot-assistée', specialty: 'Digestif',
+    titre: 'Colectomie droite assistée par robot',
+    defaults: {
+      rappelClinique: 'Tumeur du côlon droit.',
+      installation: "Décubitus dorsal, bras le long du corps. Vérification des points d'appui.",
+      voieAbord: "Pneumopéritoine à l'aiguille de Palmer en hypochondre gauche, insufflation à 12 mmHg. Mise en place de 4 trocarts de 8 mm sous contrôle de la vue, en ligne oblique entre la région sus-pubienne et l'hypochondre gauche. Mise en place d'un trocart de 12 mm en flanc gauche.",
+      exploration: "Exploration de la cavité abdominale : pas d'extension tumorale, pas de carcinose péritonéale, pas de métastase hépatique.",
+      gestes: "Ouverture du ligament gastro-colique et section du grand épiploon à l'aplomb de la ligne médiane, avec abaissement de l'angle colique droit et découverte de la face antérieure du bloc duodéno-pancréatique. Section entre 2 clips de la veine et de l'artère de l'angle colique droit. Poursuite du décollement colo-pariétal de haut en bas en incisant le péritoine de la gouttière pariéto-colique.\n\nDissection du pédicule iléo-bi-caeco-appendiculaire, avec ligature et section entre 2 clips de l'artère et de la veine séparément. Libération des attaches péritonéales du côlon droit et de la racine du mésentère.\n\nSection du mésentère au niveau de la dernière anse iléale et du mésocôlon transverse. Section du côlon transverse et de la dernière anse iléale par 2 agrafages à l'endoGIA. Pièce extraite par une incision de Pfannenstiel dans un sac protecteur.\n\nRétablissement de continuité par anastomose iléo-colique latéro-latérale isopéristaltique par 2 hémisurjets de fil monobrin Stratafix 3/0 résorbable. Couverture de l'anastomose par une plastie du grand épiploon restant.\n\nFermeture pariétale en deux plans par surjets de fil tressé résorbable n°1. Fermeture cutanée intradermique par fil monobrin 3/0 résorbable. Compte des compresses et instruments correct en fin d'intervention.",
+      materiel: "Trocarts robotiques, clips, endoGIA, sac d'extraction, fil monobrin Stratafix 3/0 résorbable.",
+    }
+  },
+  {
+    id: 'tpl-ksc', name: 'Résection de kyste sacro-coccygien', specialty: 'Digestif',
+    titre: 'Résection définitive d’un kyste sacro-coccygien',
+    defaults: {
+      rappelClinique: 'Kyste sacro-coccygien.',
+      installation: 'Décubitus ventral.',
+      voieAbord: 'Instillation de bleu de Patenté dans les sinus. Incision cutanée ellipsoïde.',
+      exploration: '',
+      gestes: "Dissection sous-cutanée permettant d'emporter complètement le kyste en marges saines. Envoi en anatomopathologie. Hémostase soigneuse. Fermeture du plan profond par des points séparés de Vicryl 2/0. Fermeture du plan cutané par des points séparés de Flexocrin 3/0.",
+      materiel: 'Bleu de Patenté, Vicryl 2/0, Flexocrin 3/0.',
+    }
+  },
+
+  /* ---------- Proctologie ---------- */
+  {
+    id: 'tpl-hemorroidectomie', name: 'Hémorroïdectomie — Milligan-Morgan', specialty: 'Proctologie',
+    titre: 'Hémorroïdectomie selon Milligan et Morgan',
+    defaults: {
+      rappelClinique: 'Prolapsus hémorroïdaire de stade III-IV.',
+      installation: 'Décubitus dorsal, position de la taille.',
+      voieAbord: '',
+      exploration: "Présence d'un prolapsus hémorroïdaire de stade III-IV. Les hémorroïdes sont regroupées en trois paquets, à 1h, 5h et 9h.",
+      gestes: "Pour chaque paquet : incision cutanée arciforme économe, dissection du pédicule hémorroïdaire avec préservation de l'appareil sphinctérien externe puis interne, jusqu'à la ligne pectinée où le paquet est ligaturé par un point appuyé de fil résorbable 1. Section du paquet hémorroïdaire et envoi en anatomopathologie. Un pont cutanéo-muqueux suffisant est ménagé entre chaque paquet pour minimiser le risque de sténose cicatricielle. Hémostase correcte. Toucher rectal sans anomalie. Infiltration à la Naropeine et désinfection bétadinée.",
+      materiel: 'Fil résorbable 1 (ligature des pédicules), Naropeine.',
+    }
+  },
+
+  /* ---------- Dispositifs implantables ---------- */
+  {
+    id: 'tpl-ablation-pac', name: 'Ablation de chambre implantable (PAC)', specialty: 'Dispositifs implantables',
+    titre: 'Ablation de chambre implantable (port-à-cathéter)', typeAnesthesie: 'Anesthésie locale',
+    defaults: {
+      rappelClinique: "Indication d'ablation de chambre implantable (port-à-cathéter).",
+      installation: 'Décubitus dorsal.',
+      voieAbord: "Reprise de l'incision cutanée initiale.",
+      exploration: "Dissection des plans sous-cutanés permettant de repérer le cathéter ainsi que le boîtier.",
+      gestes: "Ablation du cathéter et du boîtier, envoyés en analyse bactériologique. Hémostase sous-cutanée. Fermeture du plan sous-cutané par points de Vicryl 2-0. Fermeture cutanée par points inversants intradermiques de Caprosyn 3-0.",
+      materiel: 'Fil Vicryl 2-0, fil Caprosyn 3-0.',
+    }
+  },
+  {
+    id: 'tpl-pac-cephalique', name: 'Pose de PAC — voie céphalique', specialty: 'Dispositifs implantables',
+    titre: 'Mise en place d’un PAC en veine céphalique droite', typeAnesthesie: 'Anesthésie locale',
+    defaults: {
+      rappelClinique: "Indication de pose de chambre implantable (port-à-cathéter).",
+      voieAbord: 'Incision dans le pli delto-pectoral droit.',
+      exploration: 'Dissection sous-cutanée permettant de repérer la veine céphalique droite.',
+      gestes: "Mise en place du cathéter dans la veine, extrémité distale positionnée à un corps vertébral sous la carène sous contrôle scopique. Cathéter relié à la chambre positionnée en pré-pectoral. Fermeture sous-cutanée et cutanée intradermique par points résorbables.",
+      materiel: 'Bard, chambre moyenne, cathéter 6,5 F.',
+    }
+  },
+  {
+    id: 'tpl-pac-jugulaire-externe', name: 'Pose de PAC — voie jugulaire externe', specialty: 'Dispositifs implantables',
+    titre: 'Mise en place d’un PAC en veine jugulaire externe droite', typeAnesthesie: 'Anesthésie locale',
+    defaults: {
+      rappelClinique: "Indication de pose de chambre implantable (port-à-cathéter).",
+      voieAbord: 'Incision dans le pli delto-pectoral droit.',
+      exploration: "Dissection sous-cutanée permettant de repérer la veine céphalique droite ; celle-ci est de mauvais calibre et n'accepte pas le cathéter. Incision dans le cou, dissection sous-cutanée permettant de repérer la veine jugulaire externe droite.",
+      gestes: "Mise en place du cathéter dans la veine, extrémité distale positionnée à un corps vertébral sous la carène sous contrôle scopique. Cathéter relié à la chambre positionnée en pré-pectoral. Fermeture sous-cutanée et cutanée intradermique par points résorbables.",
+      materiel: 'Bard, chambre moyenne, cathéter 6,5 F.',
+    }
+  },
+  {
+    id: 'tpl-pac-jugulaire-interne', name: 'Pose de PAC — voie jugulaire interne', specialty: 'Dispositifs implantables',
+    titre: 'Mise en place d’un PAC en veine jugulaire interne droite', typeAnesthesie: 'Anesthésie locale',
+    defaults: {
+      rappelClinique: "Indication de pose de chambre implantable (port-à-cathéter).",
+      voieAbord: 'Ponction échoguidée de la veine jugulaire interne droite. Incision dans le pli delto-pectoral droit.',
+      exploration: 'Mise en place du cathéter dans la veine, extrémité distale positionnée à un corps vertébral sous la carène sous contrôle scopique. Dissection sous-cutanée au pli delto-pectoral.',
+      gestes: 'Cathéter relié à la chambre positionnée en pré-pectoral. Fermeture sous-cutanée et cutanée intradermique par points résorbables.',
+      materiel: 'Bard, chambre moyenne, cathéter 6,5 F.',
+    }
+  },
+];
+
+/* ---------- Storage helpers ---------- */
+function loadJSON(key, fallback) {
+  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+  catch (e) { return fallback; }
+}
+function saveJSON(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+  catch (e) { console.error('Storage error', e); return false; }
+}
+
+function withMigratedTemplates() {
+  const stored = loadJSON(STORE_KEYS.templates, null);
+  if (!stored) return JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
+  const existingIds = new Set(stored.map(t => t.id));
+  const missing = DEFAULT_TEMPLATES.filter(t => !existingIds.has(t.id));
+  if (missing.length) {
+    const merged = stored.concat(JSON.parse(JSON.stringify(missing)));
+    saveJSON(STORE_KEYS.templates, merged);
+    return merged;
+  }
+  return stored;
+}
+
+let state = {
+  view: 'dashboard',
+  reports: loadJSON(STORE_KEYS.reports, []),
+  templates: withMigratedTemplates(),
+  settings: loadJSON(STORE_KEYS.settings, { chirurgien: '', etablissement: '', anesthesisteDefaut: '' }),
+  currentReportId: null,
+  draft: null,        // working copy of a report being edited
+  recognizing: null,  // field key currently being dictated
+};
+
+function uid(prefix) { return prefix + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+function persistAll() {
+  saveJSON(STORE_KEYS.reports, state.reports);
+  saveJSON(STORE_KEYS.templates, state.templates);
+  saveJSON(STORE_KEYS.settings, state.settings);
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  try { const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; } catch(e){ return d; }
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+/* ---------- Navigation ---------- */
+function setView(view, opts = {}) {
+  state.view = view;
+  if (opts.reportId !== undefined) state.currentReportId = opts.reportId;
+  document.querySelectorAll('.nav button[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view || (view==='edit' && b.dataset.view==='new')));
+  render();
+  window.scrollTo(0,0);
+}
+
+document.getElementById('nav').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-view]');
+  if (!btn) return;
+  if (btn.dataset.view === 'new') startNewReport();
+  else setView(btn.dataset.view);
+});
+
+/* mirror nav for mobile */
+function renderMobileNav() {
+  const mnav = document.getElementById('navMobile');
+  mnav.innerHTML = document.getElementById('nav').innerHTML;
+}
+renderMobileNav();
+document.getElementById('navMobile').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-view]');
+  if (!btn) return;
+  if (btn.dataset.view === 'new') startNewReport();
+  else setView(btn.dataset.view);
+});
+
+document.getElementById('wipeBtn').addEventListener('click', () => {
+  openConfirmModal('Effacer toutes les données ?', 'Cette action supprime définitivement tous vos comptes rendus, modèles personnalisés et réglages stockés dans ce navigateur. Cette action est irréversible.', () => {
+    localStorage.removeItem(STORE_KEYS.reports);
+    localStorage.removeItem(STORE_KEYS.templates);
+    localStorage.removeItem(STORE_KEYS.settings);
+    state.reports = [];
+    state.templates = JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
+    state.settings = { chirurgien: '', etablissement: '', anesthesisteDefaut: '' };
+    toast('Données effacées.');
+    setView('dashboard');
+  });
+});
+
+/* ---------- New report / template flow ---------- */
+function startNewReport() {
+  setView('pickTemplate');
+}
+
+function blankReport(templateId) {
+  const tpl = state.templates.find(t => t.id === templateId) || state.templates[0];
+  const r = {
+    id: uid('cr'),
+    status: 'brouillon',
+    templateId: tpl.id,
+    templateName: tpl.name,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    patient: { nom: '', prenom: '', naissance: '', dossier: '' },
+    intervention: {
+      titre: tpl.titre || '',
+      date: new Date().toISOString().slice(0,10),
+      heureDebut: '', heureFin: '',
+      chirurgien: state.settings.chirurgien || '',
+      aides: '', anesthesiste: state.settings.anesthesisteDefaut || '', typeAnesthesie: tpl.typeAnesthesie || 'Anesthésie générale'
+    },
+  };
+  r[RAPPEL_FIELD.key] = (tpl.defaults && tpl.defaults[RAPPEL_FIELD.key]) || '';
+  FIELD_DEFS.forEach(f => { r[f.key] = (tpl.defaults && tpl.defaults[f.key]) || ''; });
+  return r;
+}
+
+function openReportForEdit(reportId) {
+  const r = state.reports.find(x => x.id === reportId);
+  if (!r) return;
+  state.draft = JSON.parse(JSON.stringify(r));
+  state.currentReportId = reportId;
+  setView('edit');
+}
+
+function saveDraft(showToast, newStatus) {
+  if (!state.draft) return;
+  state.draft.updatedAt = new Date().toISOString();
+  if (newStatus) state.draft.status = newStatus;
+  const idx = state.reports.findIndex(r => r.id === state.draft.id);
+  const copy = JSON.parse(JSON.stringify(state.draft));
+  if (idx >= 0) state.reports[idx] = copy; else state.reports.unshift(copy);
+  persistAll();
+  if (showToast) toast(newStatus === 'finalise' ? 'Compte rendu finalisé.' : 'Brouillon enregistré.');
+}
+
+/* ---------- Speech recognition ---------- */
+const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+if (SpeechRecognitionCtor) {
+  recognition = new SpeechRecognitionCtor();
+  recognition.lang = 'fr-FR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+}
+
+function toggleDictation(fieldKey) {
+  if (!recognition) { toast('Dictée vocale non disponible sur ce navigateur.'); return; }
+  if (state.recognizing === fieldKey) {
+    recognition.stop();
+    return;
+  }
+  if (state.recognizing) { recognition.stop(); }
+  state.recognizing = fieldKey;
+  let baseText = state.draft[fieldKey] || '';
+  if (baseText && !baseText.endsWith(' ') && !baseText.endsWith('\n')) baseText += ' ';
+  let finalTranscript = '';
+
+  recognition.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) finalTranscript += transcript + ' ';
+      else interim += transcript;
+    }
+    state.draft[fieldKey] = baseText + finalTranscript + interim;
+    const ta = document.querySelector(`textarea[data-field="${fieldKey}"], input[data-field="${fieldKey}"]`);
+    if (ta) ta.value = state.draft[fieldKey];
+    updatePreview();
+  };
+  recognition.onerror = (e) => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('Accès au micro refusé.');
+    state.recognizing = null;
+    refreshMicButtons();
+  };
+  recognition.onend = () => {
+    if (state.recognizing === fieldKey) { state.recognizing = null; refreshMicButtons(); }
+  };
+  try { recognition.start(); refreshMicButtons(); }
+  catch (e) { state.recognizing = null; }
+}
+
+function refreshMicButtons() {
+  document.querySelectorAll('.mic-btn').forEach(b => {
+    b.classList.toggle('recording', b.dataset.field === state.recognizing);
+    b.innerHTML = b.dataset.field === state.recognizing ? '&#9632;' : '&#127908;';
+  });
+}
+
+/* ---------- PDF export ---------- */
+async function exportPDF() {
+  const r = state.draft || state.reports.find(x => x.id === state.currentReportId);
+  if (!r) return;
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) { toast('Générateur PDF indisponible.'); return; }
+
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const marginX = 48;
+  let y = 56;
+  const pageW = doc.internal.pageSize.getWidth();
+  const maxW = pageW - marginX * 2;
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(20,36,32);
+  const titleLines = doc.splitTextToSize(r.intervention.titre || 'Compte rendu opératoire', maxW);
+  titleLines.forEach(line => { doc.text(line, marginX, y); y += 18; });
+  if (state.settings.etablissement) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(90,100,95);
+    doc.text(state.settings.etablissement, marginX, y);
+    y += 14;
+  }
+  doc.setDrawColor(20,36,32); doc.setLineWidth(1.2);
+  doc.line(marginX, y, pageW - marginX, y);
+  y += 22;
+
+  doc.setTextColor(20,36,32);
+  const idLines = [
+    [`Patient : ${r.patient.nom || ''} ${r.patient.prenom || ''}`.trim() || '—', `Né(e) le : ${fmtDate(r.patient.naissance) || '—'}`],
+    [`N° dossier : ${r.patient.dossier || '—'}`, `Date intervention : ${fmtDate(r.intervention.date) || '—'}`],
+    [`Chirurgien : ${r.intervention.chirurgien || '—'}`, `Aide(s) : ${r.intervention.aides || '—'}`],
+    [`Anesthésiste : ${r.intervention.anesthesiste || '—'}`, `Type d'anesthésie : ${r.intervention.typeAnesthesie || '—'}`],
+    [`Horaires : ${r.intervention.heureDebut || '—'} – ${r.intervention.heureFin || '—'}`, `Statut : ${r.status === 'finalise' ? 'Finalisé' : 'Brouillon'}`],
+  ];
+  doc.setFontSize(9.5);
+  idLines.forEach(([a,b]) => {
+    doc.text(a, marginX, y);
+    doc.text(b, marginX + maxW/2, y);
+    y += 14;
+  });
+  y += 10;
+
+  function addSection(title, text, indent) {
+    if (!text) return;
+    const lx = indent ? marginX + 14 : marginX;
+    const lw = indent ? maxW - 14 : maxW;
+    if (y > 760) { doc.addPage(); y = 56; }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(9,107,94);
+    doc.text(title.toUpperCase(), lx, y);
+    y += 13;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(20,36,32);
+    const lines = doc.splitTextToSize(text, lw);
+    lines.forEach(line => {
+      if (y > 780) { doc.addPage(); y = 56; }
+      doc.text(line, lx, y);
+      y += 13.5;
+    });
+    y += 8;
+  }
+
+  addSection('Rappel clinique', r.rappelClinique);
+
+  if (y > 750) { doc.addPage(); y = 56; }
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); doc.setTextColor(20,36,32);
+  doc.text('INTERVENTION', marginX, y);
+  y += 7;
+  doc.setDrawColor(180,190,185); doc.setLineWidth(0.8);
+  doc.line(marginX, y, marginX + 70, y);
+  y += 16;
+
+  addSection('Installation du patient', r.installation, true);
+  addSection("Voie d'abord", r.voieAbord, true);
+  addSection('Exploration chirurgicale', r.exploration, true);
+  addSection('Gestes effectués', r.gestes, true);
+  addSection('Matériel implanté', r.materiel, true);
+
+  if (y > 740) { doc.addPage(); y = 56; }
+  y += 6;
+  doc.setDrawColor(216,222,218); doc.line(marginX, y, pageW - marginX, y);
+  y += 16;
+  doc.setFontSize(8.5); doc.setTextColor(90,100,95);
+  doc.text(`Document généré le ${new Date().toLocaleDateString('fr-FR')} — statut : ${r.status === 'finalise' ? 'finalisé' : 'brouillon, non signé'}.`, marginX, y);
+
+  const filenameSafe = `CR_${(r.patient.nom||'patient').replace(/[^a-zA-Z0-9]/g,'_')}_${r.intervention.date||''}.pdf`;
+  const blob = doc.output('blob');
+
+  // Hors de Claude (ex. GitHub Pages) : téléchargement direct du PDF
+  if (typeof window.claude === 'undefined') {
+    try { doc.save(filenameSafe); toast('PDF téléchargé.'); return; } catch (e) { /* fallback plus bas */ }
+  }
+
+  try {
+    const downloads = await claude.use('downloads');
+    if (downloads) {
+      const arrayBuffer = await blob.arrayBuffer();
+      await downloads.save({ filename: filenameSafe, data: arrayBuffer });
+      toast('PDF proposé au téléchargement.');
+      return;
+    }
+  } catch (e) { /* fall through to fallback */ }
+
+  // Fallback: open in a new tab so the user can save/print manually
+  try {
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    toast('PDF ouvert dans un nouvel onglet — utilisez « Enregistrer sous » pour le sauvegarder.');
+  } catch (e) {
+    toast("Impossible de générer le téléchargement sur cet appareil.");
+  }
+}
+
+/* ---------- Rendering ---------- */
+function render() {
+  document.getElementById('sfSurgeon').textContent = state.settings.chirurgien || '—';
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  const view = state.view;
+  if (view === 'dashboard') renderDashboard(main);
+  else if (view === 'list') renderList(main);
+  else if (view === 'pickTemplate') renderPickTemplate(main);
+  else if (view === 'edit') renderEditor(main);
+  else if (view === 'templates') renderTemplates(main);
+  else if (view === 'settings') renderSettings(main);
+  renderMobileNav();
+}
+
+function renderDashboard(main) {
+  const brouillons = state.reports.filter(r => r.status === 'brouillon');
+  const finalises = state.reports.filter(r => r.status === 'finalise');
+  const recent = [...state.reports].sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 6);
+
+  main.innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>Tableau de bord</h1>
+        <div class="desc">Vos comptes rendus opératoires, générés et stockés dans ce navigateur.</div>
+      </div>
+      <button class="btn btn-primary" id="dashNewBtn">+ Nouveau compte rendu</button>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="num">${state.reports.length}</div><div class="label">Comptes rendus au total</div></div>
+      <div class="stat-card"><div class="num">${brouillons.length}</div><div class="label">En brouillon</div></div>
+      <div class="stat-card"><div class="num">${finalises.length}</div><div class="label">Finalisés</div></div>
+      <div class="stat-card"><div class="num">${state.templates.length}</div><div class="label">Modèles disponibles</div></div>
+    </div>
+
+    <div class="section-title">Activité récente</div>
+    <div id="recentList"></div>
+  `;
+  document.getElementById('dashNewBtn').addEventListener('click', startNewReport);
+
+  const recentList = document.getElementById('recentList');
+  if (recent.length === 0) {
+    recentList.innerHTML = emptyStateHTML('Aucun compte rendu pour le moment', 'Créez votre premier compte rendu à partir d’un modèle ou d’une page vierge.');
+    recentList.querySelector('.empty-cta')?.addEventListener('click', startNewReport);
+  } else {
+    recentList.className = 'report-list';
+    recentList.innerHTML = recent.map(reportRowHTML).join('');
+    attachReportRowEvents(recentList);
+  }
+}
+
+function emptyStateHTML(title, desc) {
+  return `<div class="empty-state"><div class="big">${esc(title)}</div><div>${esc(desc)}</div>
+    <div style="margin-top:14px;"><button class="btn btn-primary empty-cta">+ Nouveau compte rendu</button></div></div>`;
+}
+
+function reportRowHTML(r) {
+  const name = `${r.patient.nom || ''} ${r.patient.prenom || ''}`.trim() || 'Patient sans nom';
+  const meta = [r.intervention.titre, fmtDate(r.intervention.date), r.templateName].filter(Boolean).join(' · ');
+  return `<div class="report-row" data-id="${r.id}">
+    <div class="who"><div class="name">${esc(name)}</div><div class="meta">${esc(meta)}</div></div>
+    <span class="status-pill ${r.status === 'finalise' ? 'status-finalise' : 'status-brouillon'}">${r.status === 'finalise' ? 'Finalisé' : 'Brouillon'}</span>
+  </div>`;
+}
+function attachReportRowEvents(container) {
+  container.querySelectorAll('.report-row').forEach(row => {
+    row.addEventListener('click', () => openReportForEdit(row.dataset.id));
+  });
+}
+
+function renderList(main) {
+  main.innerHTML = `
+    <div class="page-head">
+      <div><h1>Mes comptes rendus</h1><div class="desc">${state.reports.length} document(s) enregistré(s) localement.</div></div>
+      <button class="btn btn-primary" id="listNewBtn">+ Nouveau compte rendu</button>
+    </div>
+    <div class="field" style="max-width:340px;margin-bottom:18px;">
+      <input type="text" id="searchInput" placeholder="Rechercher par nom, date, intervention…" style="width:100%;padding:9px 12px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg-panel);">
+    </div>
+    <div id="listContainer"></div>
+  `;
+  document.getElementById('listNewBtn').addEventListener('click', startNewReport);
+  const container = document.getElementById('listContainer');
+
+  function draw(filter) {
+    let items = [...state.reports].sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    if (filter) {
+      const f = filter.toLowerCase();
+      items = items.filter(r => JSON.stringify(r).toLowerCase().includes(f));
+    }
+    if (items.length === 0) {
+      container.innerHTML = state.reports.length === 0
+        ? emptyStateHTML('Aucun compte rendu pour le moment', 'Créez votre premier compte rendu à partir d’un modèle ou d’une page vierge.')
+        : `<div class="empty-state"><div class="big">Aucun résultat</div><div>Essayez un autre terme de recherche.</div></div>`;
+      container.querySelector('.empty-cta')?.addEventListener('click', startNewReport);
+    } else {
+      container.className = 'report-list';
+      container.innerHTML = items.map(reportRowHTML).join('');
+      attachReportRowEvents(container);
+    }
+  }
+  draw('');
+  document.getElementById('searchInput').addEventListener('input', e => draw(e.target.value));
+}
+
+function groupTemplatesBySpecialty(templates) {
+  const groups = {};
+  templates.forEach(t => {
+    const key = t.specialty || 'Autres';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(t);
+  });
+  const orderedKeys = [...SPECIALTY_ORDER.filter(k => groups[k]), ...Object.keys(groups).filter(k => !SPECIALTY_ORDER.includes(k)).sort()];
+  return orderedKeys.map(key => ({ specialty: key, items: groups[key] }));
+}
+
+function tplCardHTML(t) {
+  return `
+    <div class="tpl-card" data-id="${t.id}">
+      <div class="spec">${esc(t.specialty || 'Général')}</div>
+      <h3>${esc(t.name)}</h3>
+      <p>${esc(t.titre || 'Modèle personnalisable, sections vierges.')}</p>
+    </div>
+  `;
+}
+
+function renderPickTemplate(main) {
+  main.innerHTML = `
+    <div class="page-head">
+      <div><h1>Choisir un modèle</h1><div class="desc">Partez d’un modèle préréglé ou d’une page vierge — tout reste modifiable ensuite.</div></div>
+      <button class="btn btn-ghost" id="cancelPick">Annuler</button>
+    </div>
+    <div class="field" style="max-width:340px;margin-bottom:22px;">
+      <input type="text" id="tplSearch" placeholder="Rechercher un modèle…" style="width:100%;padding:9px 12px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg-panel);">
+    </div>
+    <div id="tplGroups"></div>
+  `;
+  document.getElementById('cancelPick').addEventListener('click', () => setView('dashboard'));
+  const groupsEl = document.getElementById('tplGroups');
+
+  function draw(filter) {
+    let items = state.templates;
+    if (filter) {
+      const f = filter.toLowerCase();
+      items = items.filter(t => (t.name + ' ' + (t.specialty||'') + ' ' + (t.titre||'')).toLowerCase().includes(f));
+    }
+    const groups = groupTemplatesBySpecialty(items);
+    if (groups.length === 0) {
+      groupsEl.innerHTML = `<div class="empty-state"><div class="big">Aucun résultat</div><div>Essayez un autre terme de recherche.</div></div>`;
+      return;
+    }
+    groupsEl.innerHTML = groups.map(g => `
+      <div class="section-title">${esc(g.specialty)}</div>
+      <div class="tpl-grid">${g.items.map(tplCardHTML).join('')}</div>
+    `).join('');
+    groupsEl.querySelectorAll('.tpl-card').forEach(card => {
+      card.addEventListener('click', () => {
+        state.draft = blankReport(card.dataset.id);
+        state.currentReportId = state.draft.id;
+        setView('edit');
+      });
+    });
+  }
+  draw('');
+  document.getElementById('tplSearch').addEventListener('input', e => draw(e.target.value));
+}
+
+function renderEditor(main) {
+  const r = state.draft;
+  if (!r) { setView('dashboard'); return; }
+  main.innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>${r.patient.nom ? esc(r.patient.nom + ' ' + (r.patient.prenom||'')) : 'Nouveau compte rendu'}</h1>
+        <div class="desc">Modèle : ${esc(r.templateName)} · <span class="status-pill ${r.status==='finalise'?'status-finalise':'status-brouillon'}">${r.status==='finalise'?'Finalisé':'Brouillon'}</span></div>
+      </div>
+      <button class="btn btn-ghost" id="backBtn">← Retour</button>
+    </div>
+    ${!recognition ? `<div class="banner">La dictée vocale n'est pas prise en charge par ce navigateur. Utilisez Chrome ou Edge sur ordinateur pour dicter vos comptes rendus.</div>` : ''}
+    <div class="editor-wrap">
+      <section class="form-panel">
+        <div class="panel-head"><h2>Saisie</h2></div>
+        <div class="panel-body" id="formBody"></div>
+      </section>
+      <section class="preview-panel">
+        <div class="panel-head"><h2>Aperçu du document</h2></div>
+        <div class="panel-body"><div class="doc" id="docPreview"></div></div>
+      </section>
+    </div>
+    <div class="editor-actions">
+      <button class="btn btn-primary" id="finalizeBtn">Valider et finaliser</button>
+      <button class="btn" id="saveDraftBtn">Enregistrer le brouillon</button>
+      <button class="btn" id="exportBtn">Exporter en PDF</button>
+      <button class="btn btn-danger" id="deleteBtn" style="margin-left:auto;">Supprimer</button>
+    </div>
+  `;
+  document.getElementById('backBtn').addEventListener('click', () => { saveDraft(false); setView(state.reports.find(x=>x.id===r.id) ? 'list' : 'dashboard'); });
+  document.getElementById('finalizeBtn').addEventListener('click', () => { saveDraft(true, 'finalise'); setView('list'); });
+  document.getElementById('saveDraftBtn').addEventListener('click', () => saveDraft(true, 'brouillon'));
+  document.getElementById('exportBtn').addEventListener('click', exportPDF);
+  document.getElementById('deleteBtn').addEventListener('click', () => {
+    openConfirmModal('Supprimer ce compte rendu ?', 'Cette action est irréversible.', () => {
+      state.reports = state.reports.filter(x => x.id !== r.id);
+      persistAll();
+      toast('Compte rendu supprimé.');
+      setView('list');
+    });
+  });
+
+  buildForm();
+  updatePreview();
+}
+
+function textInput(field, label, type='text', value='') {
+  return `<div class="field"><label>${label}</label><input type="${type}" data-field="${field}" value="${esc(value)}"></div>`;
+}
+
+function textareaField(key, label, tall) {
+  return `
+    <div class="field full">
+      <label>${esc(label)}</label>
+      <div class="field-textarea-wrap">
+        <textarea class="${tall ? 'tall' : ''}" data-field="${key}" placeholder="Saisissez ou dictez…">${esc(state.draft[key] || '')}</textarea>
+        <button type="button" class="mic-btn" data-field="${key}" title="Dicter" ${recognition ? '' : 'disabled'}>&#127908;</button>
+      </div>
+    </div>
+  `;
+}
+
+function buildForm() {
+  const r = state.draft;
+  const body = document.getElementById('formBody');
+  body.innerHTML = `
+    <div class="fieldset">
+      <span class="legend">Patient</span>
+      <div class="field-grid">
+        ${textInput('patient.nom', 'Nom', 'text', r.patient.nom)}
+        ${textInput('patient.prenom', 'Prénom', 'text', r.patient.prenom)}
+        ${textInput('patient.naissance', 'Date de naissance', 'date', r.patient.naissance)}
+        ${textInput('patient.dossier', 'N° de dossier', 'text', r.patient.dossier)}
+      </div>
+    </div>
+    <div class="fieldset">
+      <span class="legend">Intervention</span>
+      <div class="field full">
+        <label>Intitulé de l'intervention</label>
+        <div id="titleBlock"></div>
+      </div>
+      <div class="field-grid">
+        ${textInput('intervention.date', 'Date', 'date', r.intervention.date)}
+        ${textInput('intervention.chirurgien', 'Chirurgien', 'text', r.intervention.chirurgien)}
+        ${textInput('intervention.heureDebut', 'Heure de début', 'time', r.intervention.heureDebut)}
+        ${textInput('intervention.heureFin', 'Heure de fin', 'time', r.intervention.heureFin)}
+        ${textInput('intervention.aides', 'Aide(s) opératoire(s)', 'text', r.intervention.aides)}
+        ${textInput('intervention.anesthesiste', 'Anesthésiste', 'text', r.intervention.anesthesiste)}
+        <div class="field full">${textInput('intervention.typeAnesthesie', "Type d'anesthésie", 'text', r.intervention.typeAnesthesie).replace('<div class="field">','').replace('</div>','')}</div>
+      </div>
+    </div>
+    <div class="fieldset">
+      <span class="legend">Rappel clinique</span>
+      ${textareaField(RAPPEL_FIELD.key, RAPPEL_FIELD.label, RAPPEL_FIELD.tall)}
+    </div>
+    <div class="fieldset">
+      <span class="legend">Intervention — compte rendu</span>
+      ${FIELD_DEFS.map(f => textareaField(f.key, f.label, f.tall)).join('')}
+    </div>
+  `;
+
+  body.querySelectorAll('input[data-field]').forEach(el => {
+    el.addEventListener('input', () => {
+      setDeep(r, el.dataset.field, el.value);
+      updatePreview();
+    });
+  });
+  body.querySelectorAll('textarea[data-field]').forEach(el => {
+    el.addEventListener('input', () => {
+      r[el.dataset.field] = el.value;
+      updatePreview();
+    });
+  });
+  body.querySelectorAll('.mic-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleDictation(btn.dataset.field));
+  });
+
+  renderTitleBlock();
+}
+
+/* ---------- Intitulé de l'intervention : sélection rapide + variantes ---------- */
+function matchStandardTitle(titre) {
+  if (!titre) return null;
+  for (const st of STANDARD_TITLES) {
+    if (titre === st.base) return { st, side: '', modifier: false };
+    if (st.sides) {
+      for (const side of st.sides) {
+        if (titre === st.base + ' ' + side) return { st, side, modifier: false };
+      }
+    }
+    if (st.modifier && titre === st.base + ' ' + st.modifier) return { st, side: '', modifier: true };
+  }
+  return null;
+}
+
+function renderTitleBlock() {
+  const wrap = document.getElementById('titleBlock');
+  if (!wrap) return;
+  const r = state.draft;
+  const current = r.intervention.titre || '';
+  const match = matchStandardTitle(current);
+
+  wrap.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+      ${STANDARD_TITLES.map(st => `
+        <button type="button" class="btn btn-sm titleChip" data-id="${st.id}"
+          style="${match && match.st.id === st.id ? 'background:var(--accent-soft);border-color:var(--accent);color:var(--accent-dark);' : ''}">
+          ${esc(st.label)}
+        </button>
+      `).join('')}
+    </div>
+    ${match && match.st.sides ? `
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+        ${match.st.sides.map(side => `
+          <button type="button" class="btn btn-sm sideChip" data-side="${side}"
+            style="${match.side === side ? 'background:var(--gold-soft);border-color:var(--gold);color:var(--gold);' : ''}">
+            ${esc(side.charAt(0).toUpperCase() + side.slice(1))}
+          </button>
+        `).join('')}
+      </div>
+    ` : ''}
+    ${match && match.st.modifier ? `
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+        <button type="button" class="btn btn-sm modChip"
+          style="${match.modifier ? 'background:var(--gold-soft);border-color:var(--gold);color:var(--gold);' : ''}">
+          + ${esc(match.st.modifier)}
+        </button>
+      </div>
+    ` : ''}
+    <input type="text" data-field="intervention.titre" id="titleTextInput" value="${esc(current)}" placeholder="Ou saisissez un intitulé libre…">
+  `;
+
+  wrap.querySelectorAll('.titleChip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const st = STANDARD_TITLES.find(s => s.id === btn.dataset.id);
+      r.intervention.titre = st.base;
+      renderTitleBlock();
+      updatePreview();
+    });
+  });
+  wrap.querySelectorAll('.sideChip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const base = match.st.base;
+      const side = btn.dataset.side;
+      r.intervention.titre = (match.side === side) ? base : base + ' ' + side;
+      renderTitleBlock();
+      updatePreview();
+    });
+  });
+  wrap.querySelectorAll('.modChip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const base = match.st.base;
+      r.intervention.titre = match.modifier ? base : base + ' ' + match.st.modifier;
+      renderTitleBlock();
+      updatePreview();
+    });
+  });
+  const textInputEl = wrap.querySelector('#titleTextInput');
+  textInputEl.addEventListener('input', () => {
+    r.intervention.titre = textInputEl.value;
+    updatePreview();
+    // ne rafraîchit pas les boutons à chaque frappe pour ne pas perdre le focus/curseur
+  });
+  textInputEl.addEventListener('blur', () => renderTitleBlock());
+}
+
+function setDeep(obj, path, value) {
+  const parts = path.split('.');
+  if (parts.length === 1) { obj[parts[0]] = value; return; }
+  obj[parts[0]][parts[1]] = value;
+}
+
+function docField(label, value, sub) {
+  const tag = sub ? 'h5' : 'h4';
+  return `<${tag}>${esc(label)}</${tag}><p>${value ? esc(value) : '<span class="empty-field">Non renseigné</span>'}</p>`;
+}
+
+function updatePreview() {
+  const r = state.draft;
+  const el = document.getElementById('docPreview');
+  if (!el || !r) return;
+  const name = `${r.patient.nom || ''} ${r.patient.prenom || ''}`.trim() || '—';
+  el.innerHTML = `
+    <div class="doc-head" style="flex-direction:column;align-items:flex-start;gap:3px;">
+      <h2 style="font-family:'Source Serif 4',serif;font-size:18px;font-weight:700;color:#16211C;">${esc(r.intervention.titre || 'Compte rendu opératoire')}</h2>
+      ${state.settings.etablissement ? `<div style="font-size:11.5px;color:#52655C;">${esc(state.settings.etablissement)}</div>` : ''}
+    </div>
+    <div class="id-grid">
+      <div><b>Patient :</b> ${esc(name)}</div>
+      <div><b>Né(e) le :</b> ${fmtDate(r.patient.naissance) || '—'}</div>
+      <div><b>N° dossier :</b> ${esc(r.patient.dossier) || '—'}</div>
+      <div><b>Date intervention :</b> ${fmtDate(r.intervention.date) || '—'}</div>
+      <div><b>Chirurgien :</b> ${esc(r.intervention.chirurgien) || '—'}</div>
+      <div><b>Aide(s) :</b> ${esc(r.intervention.aides) || '—'}</div>
+      <div><b>Anesthésiste :</b> ${esc(r.intervention.anesthesiste) || '—'}</div>
+      <div><b>Anesthésie :</b> ${esc(r.intervention.typeAnesthesie) || '—'}</div>
+    </div>
+    ${docField('Rappel clinique', r.rappelClinique)}
+    <h4 style="font-size:13px;margin-top:20px;">Intervention</h4>
+    <div style="padding-left:14px;border-left:2px solid #DCEAE6;">
+      ${docField('Installation du patient', r.installation, true)}
+      ${docField("Voie d'abord", r.voieAbord, true)}
+      ${docField('Exploration chirurgicale', r.exploration, true)}
+      ${docField('Gestes effectués', r.gestes, true)}
+      ${docField('Matériel implanté', r.materiel, true)}
+    </div>
+    <div class="sign">Statut : ${r.status === 'finalise' ? 'Finalisé' : 'Brouillon — non signé'} · Document personnel, généré localement.</div>
+  `;
+}
+
+/* ---------- Templates management ---------- */
+function renderTemplates(main) {
+  main.innerHTML = `
+    <div class="page-head">
+      <div><h1>Modèles</h1><div class="desc">Modèles réutilisables par type d'intervention. Modifiez-les selon vos habitudes opératoires.</div></div>
+      <button class="btn btn-primary" id="addTplBtn">+ Nouveau modèle</button>
+    </div>
+    <div id="tplMgmtGroups"></div>
+  `;
+  const groupsEl = document.getElementById('tplMgmtGroups');
+  const groups = groupTemplatesBySpecialty(state.templates);
+  groupsEl.innerHTML = groups.map(g => `
+    <div class="section-title">${esc(g.specialty)}</div>
+    <div class="tpl-grid">${g.items.map(t => `
+      <div class="tpl-card" data-id="${t.id}">
+        <div class="spec">${esc(t.specialty || 'Général')}</div>
+        <h3>${esc(t.name)}</h3>
+        <p>${esc(t.titre || 'Modèle personnalisable.')}</p>
+        <div class="row-actions">
+          <button class="btn btn-sm editTplBtn" data-id="${t.id}">Modifier</button>
+          <button class="btn btn-sm btn-danger delTplBtn" data-id="${t.id}">Supprimer</button>
+        </div>
+      </div>
+    `).join('')}</div>
+  `).join('');
+  groupsEl.querySelectorAll('.editTplBtn').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); openTemplateEditor(b.dataset.id); }));
+  groupsEl.querySelectorAll('.delTplBtn').forEach(b => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openConfirmModal('Supprimer ce modèle ?', 'Les comptes rendus déjà créés ne seront pas affectés.', () => {
+      state.templates = state.templates.filter(t => t.id !== b.dataset.id);
+      persistAll();
+      renderTemplates(main);
+      toast('Modèle supprimé.');
+    });
+  }));
+  document.getElementById('addTplBtn').addEventListener('click', () => openTemplateEditor(null));
+}
+
+function openTemplateEditor(templateId) {
+  const isNew = !templateId;
+  const tpl = isNew
+    ? { id: uid('tpl'), name: '', specialty: '', titre: '', typeAnesthesie: '', defaults: {} }
+    : JSON.parse(JSON.stringify(state.templates.find(t => t.id === templateId)));
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal" style="width:560px;">
+      <div class="modal-head"><h3>${isNew ? 'Nouveau modèle' : 'Modifier le modèle'}</h3></div>
+      <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+        <div class="field"><label>Nom du modèle</label><input type="text" id="tName" value="${esc(tpl.name)}" placeholder="Ex. Prothèse totale de genou"></div>
+        <div class="field"><label>Spécialité</label><input type="text" id="tSpecialty" value="${esc(tpl.specialty)}" placeholder="Ex. Orthopédie"></div>
+        <div class="field"><label>Intitulé par défaut de l'intervention</label><input type="text" id="tTitre" value="${esc(tpl.titre)}"></div>
+        <div class="field"><label>Type d'anesthésie par défaut</label><input type="text" id="tAnesth" value="${esc(tpl.typeAnesthesie || '')}" placeholder="Ex. Anesthésie générale"></div>
+        <div class="section-title" style="margin-top:18px;">Texte par défaut des sections (facultatif)</div>
+        ${[RAPPEL_FIELD, ...FIELD_DEFS].map(f => `<div class="field"><label>${f.label}</label><textarea data-def="${f.key}" style="width:100%;min-height:50px;padding:7px 9px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);">${esc((tpl.defaults && tpl.defaults[f.key]) || '')}</textarea></div>`).join('')}
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="tplCancel">Annuler</button>
+        <button class="btn btn-primary" id="tplSave">Enregistrer le modèle</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+  backdrop.querySelector('#tplCancel').addEventListener('click', () => backdrop.remove());
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
+  backdrop.querySelector('#tplSave').addEventListener('click', () => {
+    tpl.name = backdrop.querySelector('#tName').value.trim() || 'Modèle sans nom';
+    tpl.specialty = backdrop.querySelector('#tSpecialty').value.trim();
+    tpl.titre = backdrop.querySelector('#tTitre').value.trim();
+    tpl.typeAnesthesie = backdrop.querySelector('#tAnesth').value.trim();
+    tpl.defaults = {};
+    backdrop.querySelectorAll('textarea[data-def]').forEach(ta => { tpl.defaults[ta.dataset.def] = ta.value; });
+    const idx = state.templates.findIndex(t => t.id === tpl.id);
+    if (idx >= 0) state.templates[idx] = tpl; else state.templates.push(tpl);
+    persistAll();
+    backdrop.remove();
+    toast('Modèle enregistré.');
+    renderTemplates(document.getElementById('main'));
+  });
+}
+
+/* ---------- Settings ---------- */
+function renderSettings(main) {
+  main.innerHTML = `
+    <div class="page-head"><div><h1>Réglages</h1><div class="desc">Ces informations préremplissent automatiquement vos futurs comptes rendus.</div></div></div>
+    <div class="form-panel" style="max-width:480px;">
+      <div class="panel-body">
+        <div class="field"><label>Nom du chirurgien</label><input type="text" id="setSurgeon" value="${esc(state.settings.chirurgien)}"></div>
+        <div class="field"><label>Établissement / cabinet</label><input type="text" id="setOrg" value="${esc(state.settings.etablissement)}"></div>
+        <div class="field"><label>Anesthésiste habituel (facultatif)</label><input type="text" id="setAnesth" value="${esc(state.settings.anesthesisteDefaut)}"></div>
+        <button class="btn btn-primary" id="saveSettingsBtn">Enregistrer</button>
+      </div>
+    </div>
+    <div class="banner info" style="max-width:480px;margin-top:22px;">
+      Toutes les données (patients, comptes rendus, modèles) restent stockées uniquement dans ce navigateur — rien n'est transmis à un serveur. Pensez à exporter vos comptes rendus importants en PDF pour les conserver, et à ne pas vider le cache de ce navigateur sans avoir sauvegardé vos données.
+    </div>
+  `;
+  document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+    state.settings.chirurgien = document.getElementById('setSurgeon').value.trim();
+    state.settings.etablissement = document.getElementById('setOrg').value.trim();
+    state.settings.anesthesisteDefaut = document.getElementById('setAnesth').value.trim();
+    persistAll();
+    toast('Réglages enregistrés.');
+    render();
+  });
+}
+
+/* ---------- Confirm modal ---------- */
+function openConfirmModal(title, body, onConfirm) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal">
+      <div class="modal-head"><h3>${esc(title)}</h3></div>
+      <div class="modal-body">${esc(body)}</div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="confCancel">Annuler</button>
+        <button class="btn btn-danger" id="confOk">Confirmer</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+  backdrop.querySelector('#confCancel').addEventListener('click', () => backdrop.remove());
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
+  backdrop.querySelector('#confOk').addEventListener('click', () => { backdrop.remove(); onConfirm(); });
+}
+
+/* ---------- Init ---------- */
+render();
+</script>
+</body>
+</html>
