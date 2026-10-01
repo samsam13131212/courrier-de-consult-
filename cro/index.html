@@ -80,6 +80,9 @@ dialog::backdrop{background:#0008}
   <button class="b sm sp" id="btn-settings">⚙ Paramètres IA</button>
   <button class="b sm" id="btn-theme" aria-label="Mode sombre">🌓</button>
 </header>
+<div id="updbar" class="warn" hidden style="max-width:1468px;margin:12px auto 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <span id="updtxt" style="flex:1"></span><button class="b sm pri" id="upd-apply">Mettre à jour</button><button class="b sm" id="upd-later">Plus tard</button>
+</div>
 
 <!-- ============ GÉNÉRATEUR ============ -->
 <main id="view-gen">
@@ -145,6 +148,7 @@ dialog::backdrop{background:#0008}
     <div class="row"><h2 style="margin:0;font-size:16px;margin-right:auto">Compte rendu opératoire</h2>
       <button class="b sm" id="btn-copy" disabled>📋 Copier</button>
       <button class="b sm" id="btn-docx" disabled>📝 Exporter .docx</button>
+      <button class="b sm" id="btn-mail" disabled>✉ Envoyer par mail</button>
       <button class="b sm" id="btn-pdf" disabled>⬇ Exporter PDF</button></div>
     <div class="err" id="err" role="alert" hidden></div>
     <div class="warn" id="warn" hidden></div>
@@ -164,6 +168,7 @@ dialog::backdrop{background:#0008}
       <button class="b sm" id="m-import">⬆ Importer JSON</button><input type="file" id="m-file" accept=".json,application/json" hidden>
     </div>
     <ul id="mlist"></ul>
+    <button class="b sm" id="m-sync">↻ Vérifier les mises à jour en ligne</button>
     <button class="b sm" id="m-reset">↺ Restaurer les 14 modèles standards</button>
   </aside>
   <section id="mform" class="col">
@@ -187,24 +192,42 @@ dialog::backdrop{background:#0008}
 <dialog id="dlg">
   <h3 style="margin-top:0">Paramètres IA</h3>
   <label class="l" for="prov">Fournisseur</label>
-  <select id="prov"><option value="gemini">Google Gemini (offre gratuite)</option><option value="claude">Anthropic Claude (API payante)</option></select>
-  <div id="gbox" style="margin-top:10px">
+  <select id="prov">
+    <option value="proxy">Gemini via proxy sécurisé (clé protégée, recommandé)</option>
+    <option value="gemini">Gemini avec ma clé (saisie dans ce navigateur)</option>
+    <option value="claude">Anthropic Claude (API payante)</option>
+  </select>
+  <div id="pbox" style="margin-top:10px">
+    <label class="l" for="purl">Adresse du proxy</label><input type="text" id="purl" placeholder="https://cro-proxy.votre-compte.workers.dev">
+    <label class="l" for="pcode" style="margin-top:10px">Code d'accès</label><input type="password" id="pcode" autocomplete="off">
+    <p class="small">La clé Gemini reste cachée sur le proxy : elle n'est jamais dans cette page. Le code d'accès est demandé une seule fois par appareil.</p>
+  </div>
+  <div id="gbox" style="margin-top:10px" hidden>
     <label class="l" for="gkey">Clé API Gemini</label><input type="password" id="gkey" placeholder="AIza..." autocomplete="off">
-    <label class="l" for="gmodel" style="margin-top:10px">Modèle</label><input type="text" id="gmodel">
-    <p class="small">Clé gratuite : aistudio.google.com/apikey (compte Google, sans carte bancaire). « gemini-2.5-flash-lite » est le modèle qui offre le plus de requêtes gratuites ; la réflexion interne est désactivée pour économiser le quota.</p>
-    <p class="small"><b>Confidentialité :</b> sur l'offre gratuite, Google peut utiliser les données envoyées pour améliorer ses produits et les faire relire par des humains. N'envoyez aucune donnée identifiante (l'application n'en demande aucune).</p>
+    <p class="small">Clé gratuite : aistudio.google.com/apikey. Elle est enregistrée dans ce navigateur uniquement ; utilisez plutôt le proxy si la page est hébergée en ligne.</p>
+  </div>
+  <div id="mbox" style="margin-top:10px">
+    <label class="l" for="gmodel">Modèle Gemini</label><input type="text" id="gmodel">
+    <p class="small">Par défaut : « gemini-3.5-flash-lite » (le plus économe).</p>
   </div>
   <div id="cbox" style="margin-top:10px" hidden>
     <label class="l" for="apikey">Clé API Anthropic</label><input type="password" id="apikey" placeholder="sk-ant-..." autocomplete="off">
     <label class="l" for="model" style="margin-top:10px">Modèle</label><input type="text" id="model">
   </div>
-  <p class="small">Les clés sont enregistrées uniquement dans ce navigateur, sur cet ordinateur. Ne mettez pas ce fichier en ligne et ne le partagez pas après configuration. Sans clé, « Générer » assemble le texte depuis le modèle type, sans IA.</p>
+  <p class="small"><b>Confidentialité :</b> sur l'offre gratuite, Google peut utiliser les données envoyées pour améliorer ses produits et les faire relire par des humains. N'envoyez aucune donnée identifiante. Sans configuration, « Générer » assemble le texte depuis le modèle type, sans IA.</p>
   <div class="row" style="justify-content:flex-end"><button class="b" id="dlg-close">Fermer</button><button class="b pri" id="dlg-save">Enregistrer</button></div>
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 <script>
 "use strict";
+/* ====== CONFIGURATION (à adapter une seule fois) ======
+   DEFAULT_PROXY_URL : adresse de votre proxy sécurisé (voir proxy/README.md). Ce n'est PAS un secret.
+   La clé API Gemini ne doit JAMAIS être écrite dans ce fichier : elle vit uniquement dans le proxy. */
+const DEFAULT_PROXY_URL = "";
+const MODELS_URL = "modeles.json"; // bibliothèque en ligne, à côté de ce fichier sur l'hébergement
+const MAIL_TO = "chigensec@hopital-saint-joseph.fr";
+const MAIL_SUBJECT = "Compte rendu opératoire de ";
 /**
  * Bibliothèque initiale : 14 comptes rendus types STANDARDS.
  * Ce sont des textes de départ génériques, à remplacer par les vôtres depuis la page « Modèles »
@@ -548,7 +571,7 @@ function refreshOut() {
   $("#layer").innerHTML = esc(t).replace(/\[À COMPLÉTER\]/g, "<mark>$&</mark>") + "\n";
   el.style.height = "0px"; el.style.height = el.scrollHeight + "px";
   const has = t.trim().length > 0;
-  ["#btn-copy", "#btn-docx", "#btn-pdf"].forEach((s) => ($(s).disabled = !has));
+  ["#btn-copy", "#btn-docx", "#btn-pdf", "#btn-mail"].forEach((s) => ($(s).disabled = !has));
   $("#btn-gen").textContent = busy ? "⏳ Génération…" : has ? "🔄 Régénérer" : "✨ Générer";
   $("#btn-gen").disabled = busy;
   $("#btn-stop").hidden = !busy;
@@ -701,14 +724,22 @@ function localCro(p) {
     "Compte des compresses correct en fin d'intervention."].join("\n");
 }
 
-const GEMINI_DEFAULT = "gemini-2.5-flash-lite";
+const GEMINI_DEFAULT = "gemini-3.5-flash-lite";
 let lastSig = "";
+const proxyUrl = () => (LS.get("cro:proxyurl", "") || DEFAULT_PROXY_URL).trim();
+const provider = () => LS.get("cro:provider", DEFAULT_PROXY_URL ? "proxy" : "gemini");
+/** Identifiant à utiliser pour l'appel : code d'accès (proxy), clé Gemini ou clé Claude. Vide = pas d'IA configurée. */
+function credential(prov) {
+  if (prov === "proxy") return proxyUrl() ? LS.get("cro:code", "") : "";
+  return prov === "gemini" ? LS.get("cro:geminikey", "") : LS.get("cro:apikey", "");
+}
 
 async function apiError(res, prov) {
   let m = "";
-  try { const j = await res.json(); m = (j.error && j.error.message) || ""; } catch (e) {}
+  try { const j = await res.json(); m = (j.error && (j.error.message || j.error)) || ""; if (typeof m !== "string") m = JSON.stringify(m); } catch (e) {}
   if (res.status === 429) m = "Quota gratuit atteint (limite par minute ou par jour). Réessayez plus tard, ou utilisez « Sans IA ».";
   else if (res.status === 404) m = "Modèle introuvable : vérifiez son nom dans « Paramètres IA ». " + m;
+  else if (prov === "proxy" && (res.status === 401 || res.status === 403)) m = "Code d'accès refusé par le proxy : vérifiez-le dans « Paramètres IA ».";
   else if (res.status === 401 || res.status === 403 || /API key/i.test(m)) m = "Clé API refusée : vérifiez-la dans « Paramètres IA ». " + m;
   throw new Error(m || "Erreur API (" + res.status + ").");
 }
@@ -731,17 +762,17 @@ async function readSSE(res, onEvent) {
     }
   }
 }
-async function streamGemini(key, p, signal, onText) {
+async function streamGemini(key, p, signal, onText, prov) {
   const model = LS.get("cro:gmodel", GEMINI_DEFAULT);
-  const cfg = { temperature: 0.2, maxOutputTokens: 2048 };
-  // Modèles 2.5 Flash : on coupe la « réflexion » interne, qui consomme du quota pour rien ici.
+  const cfg = { temperature: 0.2, maxOutputTokens: 3072 };
+  // Gemini 2.5 Flash : on coupe la « réflexion » interne. Les modèles 3.x utilisent un niveau minimal par défaut.
   if (/2\.5-flash/.test(model)) cfg.thinkingConfig = { thinkingBudget: 0 };
-  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":streamGenerateContent?alt=sse", {
-    method: "POST", signal,
-    headers: { "content-type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }, contents: [{ role: "user", parts: [{ text: userMessage(p) }] }], generationConfig: cfg }),
-  });
-  if (!res.ok) await apiError(res, "gemini");
+  const payload = { systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }, contents: [{ role: "user", parts: [{ text: userMessage(p) }] }], generationConfig: cfg };
+  const res = prov === "proxy"
+    ? await fetch(proxyUrl(), { method: "POST", signal, headers: { "content-type": "application/json", "x-access-code": key }, body: JSON.stringify({ model, payload }) })
+    : await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":streamGenerateContent?alt=sse", {
+        method: "POST", signal, headers: { "content-type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(payload) });
+  if (!res.ok) await apiError(res, prov);
   await readSSE(res, (ev) => {
     if (ev.error) throw new Error(ev.error.message || "Erreur Gemini.");
     if (ev.promptFeedback && ev.promptFeedback.blockReason) throw new Error("Requête bloquée par Gemini (" + ev.promptFeedback.blockReason + ").");
@@ -771,12 +802,11 @@ async function generate(forceLocal) {
   const sus = detectIds([F.titreLibre, F.indication, F.exploration, F.prothese, F.fixation, F.installation, F.particularites, F.drainageType].join("\n"));
   if (sus.length && !confirm("Attention : le texte semble contenir une donnée identifiante (" + sus.join(", ") + ").\nL'application ne doit recevoir aucune identité patient. Générer quand même ?")) return;
   showErr("");
-  const p = payload(), prov = LS.get("cro:provider", "gemini");
-  const key = prov === "gemini" ? LS.get("cro:geminikey", "") : LS.get("cro:apikey", "");
+  const p = payload(), prov = provider(), key = credential(prov);
   const noai = $("#noai");
   if (forceLocal === true || !key) {
     noai.hidden = false;
-    noai.textContent = "Mode sans IA : texte assemblé depuis le modèle type" + (key ? "" : ". Ajoutez une clé dans « Paramètres IA » pour l'adaptation par l'IA.");
+    noai.textContent = "Mode sans IA : texte assemblé depuis le modèle type" + (key ? "" : ". Configurez l'IA dans « Paramètres IA » pour l'adaptation automatique.");
     setOut(localCro(p)); return;
   }
   noai.hidden = true;
@@ -788,10 +818,10 @@ async function generate(forceLocal) {
   let acc = "";
   try {
     const onText = (t) => { acc += t; setOut(acc); };
-    await (prov === "gemini" ? streamGemini : streamClaude)(key, p, ctrl.signal, onText);
+    await (prov === "claude" ? streamClaude : streamGemini)(key, p, ctrl.signal, onText, prov);
     lastSig = sig;
   } catch (e) {
-    if (e.name !== "AbortError") showErr(e.message === "Failed to fetch" ? "Connexion impossible (réseau, ou appel bloqué par le navigateur)." : e.message);
+    if (e.name !== "AbortError") showErr(e.message === "Failed to fetch" ? "Connexion impossible (réseau, adresse du proxy incorrecte, ou appel bloqué par le navigateur)." : e.message);
   } finally { busy = false; refreshOut(); }
 }
 $("#btn-local").addEventListener("click", () => generate(true));
@@ -800,9 +830,35 @@ $("#btn-stop").addEventListener("click", () => ctrl && ctrl.abort());
 window.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); if (!$("#view-gen").hidden) generate(); } });
 
 /* ===================== Actions de l'aperçu ===================== */
+/** Copie en texte brut ET en HTML explicitement non gras : le collage dans un éditeur riche reste en police normale. */
+async function copyText(text) {
+  const para = (l) => '<p style="margin:0;font-family:Calibri,Arial,sans-serif;font-size:11pt;font-weight:normal;font-style:normal">' + (esc(l) || "&nbsp;") + "</p>";
+  const html = '<div style="font-weight:normal">' + text.replace(/\r\n/g, "\n").split("\n").map(para).join("") + "</div>";
+  try {
+    if (window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({ "text/plain": new Blob([text], { type: "text/plain" }), "text/html": new Blob([html], { type: "text/html" }) })]);
+    } else await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e2) {
+      const ta = $("#out"); ta.select(); const ok = document.execCommand("copy"); ta.setSelectionRange(0, 0); return ok;
+    }
+  }
+}
 $("#btn-copy").addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText($("#out").value); $("#btn-copy").textContent = "✓ Copié"; setTimeout(() => ($("#btn-copy").textContent = "📋 Copier"), 2000); }
-  catch (e) { $("#out").select(); document.execCommand("copy"); }
+  const ok = await copyText($("#out").value);
+  $("#btn-copy").textContent = ok ? "✓ Copié" : "Copie impossible"; setTimeout(() => ($("#btn-copy").textContent = "📋 Copier"), 2000);
+});
+/** Ouvre le logiciel de messagerie avec le destinataire, l'objet et le corps pré-remplis (rien n'est envoyé automatiquement). */
+$("#btn-mail").addEventListener("click", async () => {
+  const text = $("#out").value, subject = encodeURIComponent(MAIL_SUBJECT + titre());
+  let url = "mailto:" + MAIL_TO + "?subject=" + subject + "&body=" + encodeURIComponent(text).replace(/%0A/g, "%0D%0A");
+  if (url.length > 6000) { // les liens mailto très longs sont tronqués par certains logiciels : repli par le presse-papiers
+    await copyText(text);
+    url = "mailto:" + MAIL_TO + "?subject=" + subject + "&body=" + encodeURIComponent("Le compte rendu est trop long pour être inséré automatiquement : il a été copié dans le presse-papiers. Collez-le ici (Ctrl+V).");
+    alert("Le texte est long : il a été copié dans le presse-papiers. Collez-le (Ctrl+V) dans le corps du message qui va s'ouvrir.");
+  }
+  location.href = url;
 });
 $("#btn-pdf").addEventListener("click", () => {
   const prev = document.title; document.title = "CRO-" + (slug(titre()) || "compte-rendu");
@@ -878,7 +934,7 @@ $("#m-del").addEventListener("click", () => {
   if (!t || !confirm("Supprimer le modèle « " + t.titre + " » ?")) return;
   templates = templates.filter((x) => x.id !== mSel); mPersist(); mOpen(templates[0] ? templates[0].id : "");
 });
-$("#m-export").addEventListener("click", () => download(new Blob([JSON.stringify({ version: 1, templates }, null, 2)], { type: "application/json" }), "bibliotheque-cro.json"));
+$("#m-export").addEventListener("click", () => download(new Blob([JSON.stringify({ version: new Date().toISOString(), templates }, null, 2)], { type: "application/json" }), "bibliotheque-cro.json"));
 $("#m-import").addEventListener("click", () => $("#m-file").click());
 $("#m-file").addEventListener("change", async (e) => {
   const f = e.target.files[0]; e.target.value = ""; if (!f) return;
@@ -911,10 +967,14 @@ $("#btn-theme").addEventListener("click", () => {
   const d = document.documentElement.classList.toggle("dark"); LS.set("cro:theme", d ? "dark" : "light");
 });
 if (LS.get("cro:theme", matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") === "dark") document.documentElement.classList.add("dark");
-const showProv = () => { const g = $("#prov").value === "gemini"; $("#gbox").hidden = !g; $("#cbox").hidden = g; };
+const showProv = () => {
+  const v = $("#prov").value;
+  $("#pbox").hidden = v !== "proxy"; $("#gbox").hidden = v !== "gemini"; $("#mbox").hidden = v === "claude"; $("#cbox").hidden = v !== "claude";
+};
 $("#prov").addEventListener("change", showProv);
 $("#btn-settings").addEventListener("click", () => {
-  $("#prov").value = LS.get("cro:provider", "gemini");
+  $("#prov").value = provider();
+  $("#purl").value = proxyUrl(); $("#pcode").value = LS.get("cro:code", "");
   $("#gkey").value = LS.get("cro:geminikey", ""); $("#gmodel").value = LS.get("cro:gmodel", GEMINI_DEFAULT);
   $("#apikey").value = LS.get("cro:apikey", ""); $("#model").value = LS.get("cro:model", "claude-sonnet-5-5");
   showProv(); $("#dlg").showModal();
@@ -922,16 +982,59 @@ $("#btn-settings").addEventListener("click", () => {
 $("#dlg-close").addEventListener("click", () => $("#dlg").close());
 $("#dlg-save").addEventListener("click", () => {
   LS.set("cro:provider", $("#prov").value);
+  LS.set("cro:proxyurl", $("#purl").value.trim()); LS.set("cro:code", $("#pcode").value);
   LS.set("cro:geminikey", $("#gkey").value.trim()); LS.set("cro:gmodel", $("#gmodel").value.trim() || GEMINI_DEFAULT);
   LS.set("cro:apikey", $("#apikey").value.trim()); LS.set("cro:model", $("#model").value.trim() || "claude-sonnet-5-5");
   $("#noai").hidden = true; $("#dlg").close();
 });
+
+/* ===================== Synchronisation des modèles en ligne ===================== */
+let remoteModels = null;
+function normTemplates(arr) {
+  if (!Array.isArray(arr)) throw new Error("format invalide (tableau de modèles attendu)");
+  return arr.map((t, i) => {
+    if (!t || typeof t.titre !== "string" || typeof t.geste !== "string") throw new Error("modèle n°" + (i + 1) + " invalide (titre et geste requis)");
+    return { id: t.id || newId(), titre: t.titre, lateralise: !!t.lateralise, prothese: !!t.prothese, anesthesie: t.anesthesie || "Générale", installation: t.installation || "",
+      lesion: t.lesion || "", geste: t.geste, marques: Array.isArray(t.marques) ? t.marques.map(String) : [], fixations: Array.isArray(t.fixations) ? t.fixations.map(String) : [],
+      particularites: t.particularites || "", drainage: t.drainage || "", indicationDefaut: t.indicationDefaut || "" };
+  });
+}
+function applyRemote() {
+  const m = new Map(templates.map((t) => [t.id, t]));
+  remoteModels.arr.forEach((t) => m.set(t.id, t)); // le modèle en ligne remplace celui qui porte le même id
+  templates = [...m.values()]; LS.set("cro:templates", templates); LS.set("cro:modelsVersion", remoteModels.ver);
+  remoteModels = null; $("#updbar").hidden = true; mRenderList(); $("#interv").value = comboLabel();
+}
+async function checkModelsUpdate(manual) {
+  if (!/^https?:$/.test(location.protocol)) { if (manual) alert("La synchronisation fonctionne quand l'application est ouverte depuis son adresse web (pas depuis un fichier local)."); return; }
+  try {
+    const r = await fetch(MODELS_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status === 404 ? "fichier " + MODELS_URL + " introuvable sur l'hébergement" : "HTTP " + r.status);
+    const d = await r.json(), ver = String(d.version || ""), cur = LS.get("cro:modelsVersion", null);
+    remoteModels = { arr: normTemplates(Array.isArray(d) ? d : d.templates), ver };
+    if (cur === null) { applyRemote(); if (manual) alert("Modèles synchronisés."); return; } // premier lancement sur cet appareil
+    if (ver && ver !== cur) {
+      $("#updtxt").textContent = "Une nouvelle version des modèles est disponible (" + remoteModels.arr.length + " modèles). Vos modifications locales des modèles portant le même identifiant seront remplacées.";
+      $("#updbar").hidden = false;
+    } else { remoteModels = null; if (manual) alert("Les modèles sont à jour."); }
+  } catch (e) { remoteModels = null; if (manual) alert("Synchronisation impossible : " + e.message); }
+}
+$("#upd-apply").addEventListener("click", () => remoteModels && applyRemote());
+$("#upd-later").addEventListener("click", () => ($("#updbar").hidden = true));
+$("#m-sync").addEventListener("click", () => checkModelsUpdate(true));
 /* ===================== Démarrage ===================== */
 (function init() {
+  // Lien de configuration d'un nouvel appareil : https://.../#code=VOTRE_CODE (le fragment n'est jamais envoyé au serveur).
+  const hc = location.hash.match(/code=([^&]+)/), hp = location.hash.match(/proxy=([^&]+)/);
+  if (hc) LS.set("cro:code", decodeURIComponent(hc[1]));
+  if (hp) LS.set("cro:proxyurl", decodeURIComponent(hp[1]));
+  if (hc || hp) history.replaceState(null, "", location.pathname + location.search);
+  if (LS.get("cro:gmodel", "") === "gemini-2.5-flash-lite") LS.del("cro:gmodel"); // ancien défaut → nouveau défaut
   const d = LS.get("cro:draft", null);
   if (d && d.F) F = { ...EMPTY, ...d.F };
   syncDom(); setOut(d && d.output ? d.output : "");
   $("#noai").hidden = true;
+  checkModelsUpdate(false);
 })();
 </script>
 </body>
