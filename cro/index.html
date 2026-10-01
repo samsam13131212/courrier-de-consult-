@@ -773,13 +773,25 @@ async function streamGemini(key, p, signal, onText, prov) {
     : await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":streamGenerateContent?alt=sse", {
         method: "POST", signal, headers: { "content-type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(payload) });
   if (!res.ok) await apiError(res, prov);
-  await readSSE(res, (ev) => {
-    if (ev.error) throw new Error(ev.error.message || "Erreur Gemini.");
+  let got = false;
+  const handle = (ev) => {
+    if (ev.error) throw new Error(ev.error.message || ev.error || "Erreur Gemini.");
     if (ev.promptFeedback && ev.promptFeedback.blockReason) throw new Error("Requête bloquée par Gemini (" + ev.promptFeedback.blockReason + ").");
     const c = ev.candidates && ev.candidates[0];
-    if (c && c.content && c.content.parts) c.content.parts.forEach((pt) => { if (pt.text && !pt.thought) onText(pt.text); });
+    if (c && c.content && c.content.parts) c.content.parts.forEach((pt) => { if (pt.text && !pt.thought) { got = true; onText(pt.text); } });
+    else if (!c && typeof ev.text === "string" && ev.text) { got = true; onText(ev.text); }
     if (c && c.finishReason && !["STOP", "MAX_TOKENS"].includes(c.finishReason)) throw new Error("Réponse interrompue par Gemini (" + c.finishReason + ").");
-  });
+  };
+  // Le proxy peut renvoyer soit un flux SSE, soit une réponse JSON complète (non streamée) : on gère les deux.
+  const ct = (res.headers.get("content-type") || "").toLowerCase();
+  if (ct.includes("text/event-stream")) await readSSE(res, handle);
+  else {
+    const raw = await res.text();
+    let j = null; try { j = JSON.parse(raw); } catch (e) {}
+    if (j) (Array.isArray(j) ? j : [j]).forEach(handle);
+    else { const fake = { body: new Blob([raw]).stream() }; await readSSE(fake, handle); }
+  }
+  if (!got) throw new Error("Réponse vide de l'IA : réessayez, ou utilisez « Sans IA ».");
 }
 async function streamClaude(key, p, signal, onText) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
