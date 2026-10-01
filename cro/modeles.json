@@ -1,95 +1,85 @@
 {
-  "version": "2026-10-01T19:06:00.021Z",
+  "version": 1,
   "templates": [
     {
-      "anesthesie": "Générale",
-      "installation": "Patient installé en décubitus dorsal, bras le long du corps, position de Trendelenburg selon les besoins. Champ opératoire stérile après asepsie cutanée large",
-      "prothese": false,
-      "lateralise": false,
-      "marques": [],
-      "fixations": [],
-      "particularites": "",
-      "drainage": "",
-      "indicationDefaut": "Lithiase vésiculaire symptomatique",
       "id": "tpl-chole",
       "titre": "Cholécystectomie cœlioscopique",
-      "lesion": "Vésicule biliaire lithiasique, à paroi fine, sans signe de cholécystite aiguë. Pédicule cystique accessible. Pas d'épanchement, pas d'adhérence significative. Foie d'aspect normal.",
-      "geste": "Création du pneumopéritoine par open-cœlioscopie ombilicale. Mise en place d'un trocart optique de 10 mm ombilical, puis de trois trocarts opérateurs sous contrôle de la vue (épigastrique, hypochondre droit et flanc droit). Exploration systématique de la cavité abdominale : {EXPLORATION}.\nTraction de la vésicule vers le haut et l'extérieur. Dissection du triangle de Calot après ouverture du péritoine des deux côtés, jusqu'à obtention de la « vue critique de sécurité » : deux structures seules pénétrant dans la vésicule (canal cystique et artère cystique), la base du foie visible dans le fond du triangle.\nClippage puis section de l'artère cystique, puis du canal cystique (deux clips côté pédicule restant). Dissection rétrograde de la vésicule du lit hépatique à la pointe de l'instrument monopolaire. Hémostase soigneuse du lit vésiculaire. Contrôle de l'absence de fuite biliaire.\nExtraction de la vésicule dans un sac de protection par l'orifice ombilical. Lavage et aspiration de la région sous-hépatique.\nExsufflation du pneumopéritoine sous contrôle de la vue. Retrait des trocarts. Fermeture de l'aponévrose des orifices de 10 mm ou plus. Fermeture cutanée par points intradermiques résorbables. Pansements."
-    },
-    {
-      "anesthesie": "Générale",
-      "installation": "Patient installé en décubitus dorsal, bras le long du corps, position de Trendelenburg selon les besoins. Champ opératoire stérile après asepsie cutanée large",
-      "prothese": false,
       "lateralise": false,
+      "prothese": false,
+      "anesthesie": "Générale",
+      "installation": "Patient installé en décubitus dorsal, bras en croix, position de proclive selon les besoins. Champ opératoire stérile après asepsie cutanée large",
+      "lesion": "Vésicule biliaire lithiasique, à paroi fine, sans signe de cholécystite aiguë. Pédicule cystique accessible. Pas d'épanchement, pas d'adhérence significative. Foie d'aspect normal.",
+      "geste": "Réalisation d’une open cœlioscopie ombilicale avec introduction d'un trocart de 10mm, insufflation du pneumopéritoine à 12mm d’Hg\nIntroduction sous contrôle de la vue de 3 trocarts de 5 mm dans l'hypochondre gauche, le flanc droit et l'épigastre.\nInfiltration des orifices de trocart à la naropéine.\nObtention d’une vision critique de sécurité : exposition du triangle hépato cystique, individualisation de l’artère et le canal cystique. Section entre 2 clips hemolock du canal et de l’artère cystique. \nDissection rétrograde de la vésicule sans effraction qui est extraite à l’aide d’un sac par l’orifice ombilical et envoyée en anatomopathologie.\nHémostase soigneuse du lit vésiculaire.\nRetrait des trocarts sous contrôle de la vue et exsufflation du pneumopéritoine.\nFermeture aponévrotique ombilicale au Vicryl 1 et suture intradermique au Caprosyn 3/0 des orifices cutanés.\n\n",
       "marques": [],
       "fixations": [],
       "particularites": "",
       "drainage": "",
-      "indicationDefaut": "Lithiase vésiculaire symptomatique avec risque de lithiase de la voie biliaire principale",
+      "indicationDefaut": "Lithiase vésiculaire symptomatique"
+    },
+    {
       "id": "tpl-chole-cpo",
       "titre": "Cholécystectomie cœlioscopique avec cholangiographie per-opératoire",
-      "lesion": "Vésicule biliaire lithiasique. Canal cystique de calibre correct. Cholangiographie per-opératoire : opacification de la voie biliaire principale, de calibre normal, sans image lacunaire, avec passage duodénal libre.",
-      "geste": "Création du pneumopéritoine par open-cœlioscopie ombilicale. Mise en place d'un trocart optique de 10 mm ombilical, puis de trois trocarts opérateurs sous contrôle de la vue. Exploration systématique de la cavité abdominale : {EXPLORATION}.\nDissection du triangle de Calot jusqu'à la « vue critique de sécurité ». Clippage du canal cystique côté vésicule. Cathétérisme du canal cystique par un cathéter de cholangiographie introduit par voie transpariétale. Injection lente de produit de contraste sous amplificateur de brillance : visualisation de la voie biliaire principale, des canaux hépatiques droit et gauche et du passage duodénal.\nRetrait du cathéter. Clippage puis section du canal cystique, puis de l'artère cystique. Dissection rétrograde de la vésicule du lit hépatique. Hémostase du lit vésiculaire. Extraction de la vésicule dans un sac de protection.\nExsufflation du pneumopéritoine sous contrôle de la vue. Retrait des trocarts. Fermeture de l'aponévrose des orifices de 10 mm ou plus. Fermeture cutanée par points intradermiques résorbables. Pansements."
-    },
-    {
-      "anesthesie": "Générale",
-      "installation": "Patient installé en décubitus dorsal, bras le long du corps, position de Trendelenburg selon les besoins. Champ opératoire stérile après asepsie cutanée large",
-      "prothese": true,
-      "lateralise": true,
-      "marques": [
-        "Parietex ProGrip",
-        "Parietex Plug and Patch",
-        "Parietex",
-        "Bard 3DMax",
-        "Prolène (Ethicon)",
-        "Ultrapro",
-        "Dynamesh"
-      ],
-      "fixations": [
-        "colle biologique (cyanoacrylate)",
-        "colle de fibrine",
-        "agrafes résorbables",
-        "points transfixiants",
-        "auto-fixante, sans fixation additionnelle",
-        "aucune fixation"
-      ],
-      "particularites": "",
-      "drainage": "",
-      "indicationDefaut": "Hernie inguinale du côté {COTE} symptomatique",
-      "id": "tpl-hernie-ing-lap",
-      "titre": "Cure de hernie inguinale par voie cœlioscopique (TAPP/TEP)",
-      "lesion": "Hernie inguinale du côté {COTE}. Orifice herniaire de l'aine {COTE}, sac herniaire. Examen de l'aine controlatérale : pas de hernie.",
-      "geste": "Vessie vidée avant l'intervention. Pneumopéritoine par open-cœlioscopie ombilicale, trocart optique de 10 mm ; deux trocarts de 5 mm de part et d'autre, sous contrôle de la vue. Exploration de la cavité abdominale et des deux régions inguinales : {EXPLORATION}.\nIncision du péritoine pariétal au-dessus de l'orifice herniaire du côté {COTE}, de l'épine iliaque antéro-supérieure jusqu'au ligament ombilical médial. Décollement du plan péritonéal dans l'espace de Retzius puis dans l'espace de Bogros. Réduction du sac herniaire et dissection complète de celui-ci. Pariétalisation du cordon spermatique (ou du ligament rond) et contrôle des éléments du cordon. Identification et respect des repères : pubis, ligament de Cooper, vaisseaux épigastriques, triangle des douleurs et triangle de la mort. Dégagement d'un espace suffisant pour la prothèse.\nMise en place d'une prothèse {PROTHESE}, déployée à plat, recouvrant largement les orifices inguinal direct, inguinal indirect et fémoral du côté {COTE}. Fixation : {FIXATION}.\nFermeture du péritoine par suture, recouvrant totalement la prothèse. Contrôle de l'hémostase.\nExsufflation du pneumopéritoine sous contrôle de la vue. Retrait des trocarts. Fermeture de l'aponévrose des orifices de 10 mm ou plus. Fermeture cutanée par points intradermiques résorbables. Pansements."
-    },
-    {
-      "anesthesie": "Générale",
-      "installation": "Patient installé en décubitus dorsal, bras le long du corps, position de Trendelenburg selon les besoins. Champ opératoire stérile après asepsie cutanée large",
-      "prothese": true,
       "lateralise": false,
+      "prothese": false,
+      "anesthesie": "Générale",
+      "installation": "Patient installé en décubitus dorsal, bras en croix, position de proclive selon les besoins. Champ opératoire stérile après asepsie cutanée large",
+      "lesion": "Vésicule biliaire lithiasique  à paroi normale. Canal cystique de calibre correct. ",
+      "geste": "Réalisation d’une open cœlioscopie ombilicale avec introduction d'un trocart de 10mm, insufflation du pneumopéritoine à 12mm d’Hg\nIntroduction sous contrôle de la vue de 3 trocarts de 5 mm dans l'hypochondre gauche, le flanc droit et l'épigastre.\nInfiltration des orifices de trocart à la naropéine.\nObtention d’une vision critique de sécurité : exposition du triangle hépato cystique, individualisation de l’artère et le canal cystique.\n\nCholangiographie : \nBon passage du produit de contraste dans la voie biliaire principale et le duodénum, hépatogramme complet, pas d’obstacle visible.\n\nSection entre 2 clips hemolock du canal et de l’artère cystique. \nDissection rétrograde de la vésicule sans effraction qui est extraite à l’aide d’un sac par l’orifice ombilical et envoyée en anatomopathologie.\nHémostase soigneuse du lit vésiculaire.\nRetrait des trocarts sous contrôle de la vue et exsufflation du pneumopéritoine.\nFermeture aponévrotique ombilicale au Vicryl 1 et suture intradermique au Caprosyn 3/0 des orifices cutanés.\n\n",
+      "marques": [],
+      "fixations": [],
+      "particularites": "",
+      "drainage": "",
+      "indicationDefaut": "Lithiase vésiculaire symptomatique avec risque de lithiase de la voie biliaire principale"
+    },
+    {
+      "id": "tpl-hernie-ing-lap",
+      "titre": "Cure de hernie inguinale par voie cœlioscopique TEP",
+      "lateralise": true,
+      "prothese": true,
+      "anesthesie": "Générale",
+      "installation": "Patient installé en décubitus dorsal, bras le long du corps, position de Trendelenburg selon les besoins. Champ opératoire stérile après asepsie cutanée large",
+      "lesion": "Hernie inguinale du côté {COTE}. Orifice herniaire de l'aine {COTE}, sac herniaire. ",
+      "geste": "Vessie vidée avant l'intervention. \nOpen coelioscopie rétro musculaire et pré péritonéale sous ombilicale avec introduction d’un trocart d’un trocart de 10 mm. Insufflation à 12 mm de mercure.\nDissection à l’aide de l’optique en rétro musculaire permettant de créer un espace virtuel jusqu’à l’arche pubienne. La dissection est menée de part et d’autre de la ligne médiane.\nMise en place sous contrôle de la vue d’un trocart de 5mm à mi-distance entre le pubis et l’ombilic.\nLa dissection est poursuivie jusqu’à la crête iliaque {COTE}.\nMise en place sous contrôle de la vue d’un trocart de 5 mm à un travers de doigt à l’intérieur de la crête iliaque {COTE}.\nLa dissection est poursuivie vers le bas préservant les vaisseaux épigastriques en haut et le sac péritonéal en bas.\nLe sac herniaire est complètement libéré du cordon. La dissection est menée de façon progressive. Hémostase soigneuse.\nL’orifice inguinal profond est complètement libéré.\nOn met en place sous contrôle de la vue une plaque {PROTHESE}, déployée à plat, recouvrant largement les orifices inguinal direct, inguinal indirect et fémoral du côté {COTE}, avec positionnement du sac herniaire en arrière de cette plaque.\nExsufflation sous contrôle de la vue.\nRetrait des trocarts.\nFermeture de l’orifice ombilical par un point en X au vicryl 1 sur l’aponévrose.\nCaprosyn 3/0 intradermique à la peau.\n",
       "marques": [
-        "Parietex ProGrip",
-        "Parietex Plug and Patch",
-        "Parietex",
-        "Bard 3DMax",
-        "Prolène (Ethicon)",
-        "Ultrapro",
-        "Dynamesh"
+        "Medtronic Dextile M",
+        "Medtronic Dextile L",
+        "Parietex ProGrip"
       ],
       "fixations": [
         "colle biologique (cyanoacrylate)",
-        "colle de fibrine",
         "agrafes résorbables",
-        "points transfixiants",
         "auto-fixante, sans fixation additionnelle",
         "aucune fixation"
       ],
       "particularites": "",
       "drainage": "",
-      "indicationDefaut": "Hernie inguinale bilatérale symptomatique",
+      "indicationDefaut": "Hernie inguinale du côté {COTE} symptomatique"
+    },
+    {
       "id": "tpl-hernie-ing-bilat-lap",
       "titre": "Cure de hernie inguinale bilatérale par voie cœlioscopique",
+      "lateralise": false,
+      "prothese": true,
+      "anesthesie": "Générale",
+      "installation": "Patient installé en décubitus dorsal, bras le long du corps, position de Trendelenburg selon les besoins. Champ opératoire stérile après asepsie cutanée large",
       "lesion": "Hernie inguinale bilatérale. Sacs herniaires droit et gauche.",
-      "geste": "Vessie vidée avant l'intervention. Pneumopéritoine par open-cœlioscopie ombilicale, trocart optique de 10 mm ; deux trocarts de 5 mm de part et d'autre, sous contrôle de la vue. Exploration de la cavité abdominale et des deux régions inguinales : {EXPLORATION}.\nTraitement successif des deux côtés. Pour chaque côté : incision du péritoine pariétal au-dessus de l'orifice herniaire, décollement dans l'espace de Retzius puis de Bogros, réduction et dissection du sac, pariétalisation du cordon spermatique (ou du ligament rond), identification des repères anatomiques (pubis, ligament de Cooper, vaisseaux épigastriques).\nMise en place d'une prothèse {PROTHESE} de chaque côté, recouvrant largement les orifices inguinal direct, indirect et fémoral. Fixation : {FIXATION}.\nFermeture du péritoine par suture de chaque côté, recouvrant totalement les prothèses. Contrôle de l'hémostase.\nExsufflation du pneumopéritoine sous contrôle de la vue. Retrait des trocarts. Fermeture de l'aponévrose des orifices de 10 mm ou plus. Fermeture cutanée par points intradermiques résorbables. Pansements."
+      "geste": "Vessie vidée avant l'intervention. \nOpen coelioscopie rétro musculaire et pré péritonéale sous ombilicale avec introduction d’un trocart d’un trocart de 10 mm. Insufflation à 12 mm de mercure.\nDissection à l’aide de l’optique en rétro musculaire permettant de créer un espace virtuel jusqu’à l’arche pubienne. La dissection est menée de part et d’autre de la ligne médiane.\nMise en place sous contrôle de la vue d’un trocart de 5mm à mi-distance entre le pubis et l’ombilic.\nLa dissection est poursuivie jusqu’à la crête iliaque gauche.\nMise en place sous contrôle de la vue d’un trocart de 5 mm à un travers de doigt à l’intérieur de la crête iliaque gauche.\nLa dissection est poursuivie vers le bas préservant les vaisseaux épigastriques en haut et le sac péritonéal en bas.\nLe sac herniaire est complètement libéré du cordon. La dissection est menée de façon progressive. Hémostase soigneuse.\nL’orifice inguinal profond est complètement libéré.\nLa dissection est menée de la même façon pour le coté droit.\n\nOn met en place sous contrôle de la vue une plaque {PROTHESE} droite et gauche, déployée à plat, recouvrant largement les orifices inguinal direct, inguinal indirect et fémoral du côté droit, puis a gauche, avec positionnement du sac herniaire en arrière de cette plaque.\nExsufflation sous contrôle de la vue.\nRetrait des trocarts.\nFermeture de l’orifice ombilical par un point en X au vicryl 1 sur l’aponévrose.\nCaprosyn 3/0 intradermique à la peau.\nCompte des compresses correct en fin d’intervention. ",
+      "marques": [
+        "Parietex ProGrip",
+        "Medtronic Dextile M",
+        "Medtronic Dextile L"
+      ],
+      "fixations": [
+        "colle biologique (cyanoacrylate)",
+        "colle de fibrine",
+        "agrafes résorbables",
+        "points transfixiants",
+        "auto-fixante, sans fixation additionnelle",
+        "aucune fixation"
+      ],
+      "particularites": "",
+      "drainage": "",
+      "indicationDefaut": "Hernie inguinale bilatérale symptomatique"
     },
     {
       "anesthesie": "Locorégionale",
@@ -294,6 +284,31 @@
       "titre": "Ablation de chambre implantable (PAC)",
       "lesion": "Chambre implantable en place du côté {COTE}, sans signe inflammatoire ni infectieux local.",
       "geste": "Anesthésie locale par infiltration de lidocaïne. Incision cutanée du côté {COTE} en regard de la chambre, sur l'ancienne cicatrice. Dissection du tissu sous-cutané jusqu'à la chambre implantable. Constatations : {EXPLORATION}.\nLibération de la chambre de sa loge et des points de fixation. Traction douce et régulière du cathéter, qui est retiré en totalité sans résistance : contrôle de l'intégrité et de la longueur complète du cathéter. Compression du point de ponction veineux. Hémostase.\nFermeture du tissu sous-cutané puis de la peau par un surjet intradermique. Pansement."
+    },
+    {
+      "id": "t_mupcfszdesry",
+      "titre": "Cure de hernie ombilicale par voie coelioscopique",
+      "lateralise": false,
+      "prothese": true,
+      "anesthesie": "Générale",
+      "installation": "Patient installé en décubitus dorsal, bras le long du corps. Champ opératoire stérile après asepsie cutanée large",
+      "lesion": "Hernie ombilicale a contenu graisseux. ",
+      "geste": "Pneumopéritoine à l'aiguille de palmer en hypocondre gauche et insufflation à 12 mm de mercure. \nMise en place d'un trocart de 10 mm FIOS en flanc gauche. Mise en place de deux trocarts de 5 mm en fosse iliaque gauche et hypocondre gauche sous contrôle de la vue. \nOn réalise un décollement prépéritonéal au ras des trocarts. La dissection se poursuit vers le haut et vers le bas. On poursuit la dissection vers la ligne médiane où l'on réalise une réduction complète du sac herniaire. La dissection se poursuit à droite et permet de réaliser une dissection large sur au moins 7 cm de part et d'autre du collet.\nFermeture de l'orifice du collet herniaire par un surjet au V-loc 2-0.\nOn met en place sous contrôle de la vue une plaque {PROTHESE} de cm, déployée à plat, recouvrant largement l'orifice ombilical avec un débord d'au moins 5 cm.\nFermeture du péritoine par un surjet au V-loc 2-0. La prothèse est complétement couverte.\nExsufflation et retrait des trocarts sous contrôle de la vue.\nCaprosyn 3/0 intradermique à la peau.",
+      "marques": [
+        "Parietex ProGrip",
+        "Ventral patch 4.6",
+        "Ventral patch 6.6",
+        "Ventral patch 8.6"
+      ],
+      "fixations": [
+        "colle biologique (cyanoacrylate)",
+        "agrafes résorbables",
+        "auto-fixante, sans fixation additionnelle",
+        "aucune fixation"
+      ],
+      "particularites": "",
+      "drainage": "",
+      "indicationDefaut": ""
     }
   ]
 }
