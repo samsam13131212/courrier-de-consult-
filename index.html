@@ -393,10 +393,10 @@
   <div id="configModal" class="modal-overlay">
     <div class="modal">
       <h3 style="font-size: 1rem; margin-bottom: 10px;">Transcription audio (Groq)</h3>
-      <label for="groqKeyInput">Clé API Groq :</label>
-      <input type="password" id="groqKeyInput" placeholder="gsk_..." />
-      <p style="font-size: 0.72rem; color: var(--danger); margin-top: 4px;">
-        ⚠️ Stockée uniquement dans ce navigateur. Clé gratuite sur console.groq.com.
+      <label for="groqKeyInput">Clé API Groq (facultative) :</label>
+      <input type="password" id="groqKeyInput" placeholder="Laisser vide = clé Cloudflare automatique" />
+      <p style="font-size: 0.72rem; color: var(--success); margin-top: 4px;">
+        ✅ Si ce champ est vide, la clé Groq enregistrée dans votre Worker Cloudflare est utilisée automatiquement.
       </p>
       <label for="groqModelSelect">Modèle de transcription :</label>
       <select id="groqModelSelect">
@@ -769,8 +769,10 @@
 
     // Transcription via Groq (Whisper) : l'audio n'est plus envoyé à Gemini
     async function transcribeWithGroq(blob) {
+      // Clé locale facultative : sinon on passe par le Worker Cloudflare (clé stockée en secret)
       const groqKey = localStorage.getItem('groq_api_key');
-      if (!groqKey) throw new Error("Clé API Groq manquante. Ouvrez les Paramètres ⚙️.");
+      const proxyBase = (localStorage.getItem('gemini_proxy_url') || DEFAULT_PROXY_URL).replace(/\/$/, '');
+      if (!groqKey && !proxyBase) throw new Error("Aucune clé Groq ni proxy configuré. Ouvrez les Paramètres ⚙️.");
 
       const mime = (blob.type || 'audio/webm').split(';')[0];
       const ext = mime.includes('mp4') ? 'mp4' : mime.includes('ogg') ? 'ogg' : mime.includes('wav') ? 'wav' : 'webm';
@@ -784,11 +786,13 @@
       // Vocabulaire indicatif pour améliorer la reconnaissance des termes médicaux
       form.append('prompt', "Consultation de chirurgie digestive : cholécystectomie, éventration, hernie inguinale, colectomie, sigmoïdite, appendicectomie, coloscopie, TDM, IRM, RCP, CAT, cœlioscopie, ASA, anticoagulants.");
 
-      const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${groqKey}` },
-        body: form
-      });
+      const response = groqKey
+        ? await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${groqKey}` },
+            body: form
+          })
+        : await fetch(`${proxyBase}/groq`, { method: 'POST', body: form });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(`Groq : ${data.error?.message || response.status}`);
       return (data.text || '').trim();
@@ -812,10 +816,6 @@
 
       if (!audioBlob && !notes && !cat) {
         alert("Veuillez réaliser un enregistrement audio ou remplir les zones Notes / CAT.");
-        return;
-      }
-      if (audioBlob && !localStorage.getItem('groq_api_key')) {
-        alert("Veuillez renseigner votre clé API Groq pour la transcription (⚙️ Paramètres).");
         return;
       }
 
